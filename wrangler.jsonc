@@ -1,0 +1,11 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "gitau-website",
+    "compatibility_date": "2026-10-01",
+    "assets": {
+        "directory": "./dist",
+    },
+    "observability": {
+        "enabled": true,
+    },
+}

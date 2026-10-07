@@ -1,0 +1,12 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "ignorePatterns": ["package-lock.json", "dist", ".astro"],
+    "printWidth": 80,
+    "trailingComma": "es5",
+    "tabWidth": 4,
+    "sortImports": true,
+    "sortTailwindcss": {
+        "stylesheet": "src/styles/global.css"
+    },
+    "sortPackageJson": true
+}
