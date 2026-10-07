@@ -1,0 +1,61 @@
+---
+import { RotateCw } from "lucide-astro";
+
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+import { REPO } from "../../lib/site";
+import Button from "../ui/Button.astro";
+import Frame from "../ui/Frame.astro";
+import FrameDescription from "../ui/FrameDescription.astro";
+import FrameHeader from "../ui/FrameHeader.astro";
+import FramePanel from "../ui/FramePanel.astro";
+import FrameTitle from "../ui/FrameTitle.astro";
+import Separator from "../ui/Separator.astro";
+
+interface Props {
+    title: string;
+    description: string;
+    refreshLabel: string;
+    rows: object[];
+    Row: AstroComponentFactory;
+    repo?: string;
+}
+
+const {
+    title,
+    description,
+    refreshLabel,
+    rows,
+    Row: RowComponent,
+    repo = REPO,
+} = Astro.props;
+---
+
+<Frame class="flex-1">
+    <FrameHeader class="px-3 py-1.5">
+        <div class="flex items-center gap-2">
+            <FrameTitle class="text-base font-semibold">{title}</FrameTitle>
+            <div class="ml-auto flex items-center gap-2">
+                <Button variant="ghost" size="icon-sm" aria-label={refreshLabel}>
+                    <RotateCw />
+                </Button>
+                <slot name="actions" />
+            </div>
+        </div>
+        <FrameDescription>{description}</FrameDescription>
+    </FrameHeader>
+    <FramePanel class="flex-1 p-2">
+        <section>
+            <h2 class="px-2 pt-2 pb-1 text-sm font-semibold text-muted-foreground">
+                {repo}
+            </h2>
+            {
+                rows.map((row, index) => (
+                    <>
+                        {index > 0 && <Separator />}
+                        <RowComponent {...row} />
+                    </>
+                ))
+            }
+        </section>
+    </FramePanel>
+</Frame>

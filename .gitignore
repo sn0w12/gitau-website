@@ -2,6 +2,8 @@
 dist/
 # generated types
 .astro/
+# generated blurhashes, rebuilt by scripts/blurhash.mjs
+.generated/
 # wrangler
 .wrangler/
 

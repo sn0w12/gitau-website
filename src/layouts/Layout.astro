@@ -1,12 +1,36 @@
 ---
 import "../styles/global.css";
 
+import geistMono from "@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url";
+import inter from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
+import kalnia from "@fontsource-variable/kalnia/files/kalnia-latin-wght-normal.woff2?url";
+import instrumentSerif from "@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url";
+
+import Footer from "../components/Footer.astro";
+import Nav from "../components/Nav.astro";
+import { SITE_DESCRIPTION, SITE_NAME } from "../lib/site";
+
 interface Props {
     title: string;
-    description: string;
+    description?: string;
+    preloadHero?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description = SITE_DESCRIPTION, preloadHero = false } =
+    Astro.props;
+
+/* `Astro.site` comes from `site` in astro.config.mjs, so the head points at
+ * whatever domain is configured without naming one here. Without a configured
+ * site there is no canonical origin to claim, so those tags are left out. */
+const origin = Astro.site;
+const pageTitle = title === SITE_NAME ? title : `${title} · ${SITE_NAME}`;
+const canonical = origin ? new URL(Astro.url.pathname, origin).href : null;
+
+const OG_IMAGE = "/repo-page-dark.webp";
+const OG_WIDTH = 1402;
+const OG_HEIGHT = 920;
+const ogImage = origin ? new URL(OG_IMAGE, origin).href : OG_IMAGE;
+const fontPreloads = [inter, instrumentSerif, geistMono];
 ---
 
 <!doctype html>
@@ -15,9 +39,90 @@ const { title, description } = Astro.props;
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="generator" content={Astro.generator} />
+        <title>{pageTitle}</title>
         <meta name="description" content={description} />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <title>{title}</title>
+        {canonical && <link rel="canonical" href={canonical} />}
+
+        <link rel="icon" href="/favicon-32.png" sizes="32x32" />
+        <link rel="icon" href="/icon-192.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <link
+            rel="preload"
+            as="image"
+            href="/icon-192.png"
+            type="image/png"
+        />
+
+        {
+            fontPreloads.map((href) => (
+                <link
+                    rel="preload"
+                    href={href}
+                    as="font"
+                    type="font/woff2"
+                    crossorigin
+                />
+            ))
+        }
+        {
+            preloadHero && (
+                <link
+                    rel="preload"
+                    href={kalnia}
+                    as="font"
+                    type="font/woff2"
+                    crossorigin
+                />
+            )
+        }
+
+        {
+            preloadHero && (
+                <>
+                    <link
+                        rel="preload"
+                        as="image"
+                        href="/repo-page-light.webp"
+                        type="image/webp"
+                        media="(prefers-color-scheme: light)"
+                    />
+                    <link
+                        rel="preload"
+                        as="image"
+                        href="/repo-page-dark.webp"
+                        type="image/webp"
+                        media="(prefers-color-scheme: dark)"
+                    />
+                </>
+            )
+        }
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={description} />
+        {canonical && <meta property="og:url" content={canonical} />}
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:type" content="image/webp" />
+        <meta property="og:image:width" content={String(OG_WIDTH)} />
+        <meta property="og:image:height" content={String(OG_HEIGHT)} />
+        <meta property="og:image:alt" content={description} />
+        <meta property="og:locale" content="en_US" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta
+            name="theme-color"
+            content="#ffffff"
+            media="(prefers-color-scheme: light)"
+        />
+        <meta
+            name="theme-color"
+            content="#0e0e0e"
+            media="(prefers-color-scheme: dark)"
+        />
         <script is:inline>
             // Runs before paint so a dark-mode visitor never sees a white
             // flash. Mirrors the app's theme-store, which defaults to system.
@@ -29,9 +134,84 @@ const { title, description } = Astro.props;
                         window.matchMedia("(prefers-color-scheme: dark)").matches);
                 document.documentElement.classList.toggle("dark", dark);
             })();
+
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                document.documentElement.setAttribute("data-reveal-ready", "");
+            }
         </script>
     </head>
-    <body class="bg-background text-foreground font-sans antialiased">
-        <slot />
+    <body
+        class="flex min-h-screen flex-col bg-background font-sans text-foreground antialiased"
+    >
+        <Nav />
+        <main id="main" class="flex-1">
+            <slot />
+        </main>
+        <Footer />
     </body>
+
+    <script>
+        const targets = document.querySelectorAll<HTMLElement>(
+            "[data-reveal]"
+        );
+        if (
+            targets.length > 0 &&
+            !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
+            const reveal = (target: HTMLElement): void => {
+                target.setAttribute("data-revealed", "");
+            };
+
+            const revealWhenLoaded = (target: HTMLElement): void => {
+                /* Only the variant on screen counts. A `loading="lazy"` image
+                 * that is `display: none` may never fetch, so waiting on it
+                 * would strand the reveal. */
+                const images = [
+                    ...(target instanceof HTMLImageElement
+                        ? [target]
+                        : target.querySelectorAll("img")),
+                ].filter(
+                    (image) => getComputedStyle(image).display !== "none"
+                );
+
+                let pending = images.filter((image) => !image.complete).length;
+                if (pending === 0) {
+                    reveal(target);
+                    return;
+                }
+
+                for (const image of images) {
+                    if (image.complete) continue;
+                    for (const event of ["load", "error"]) {
+                        image.addEventListener(
+                            event,
+                            () => {
+                                if (--pending === 0) reveal(target);
+                            },
+                            { once: true }
+                        );
+                    }
+                }
+            };
+
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    for (const entry of entries) {
+                        if (!entry.isIntersecting) continue;
+                        revealWhenLoaded(entry.target as HTMLElement);
+                        observer.unobserve(entry.target);
+                    }
+                },
+                { rootMargin: "0px 0px -10% 0px", threshold: 0.05 }
+            );
+
+            for (const target of targets) {
+                if (target.getBoundingClientRect().top < 0) {
+                    revealWhenLoaded(target);
+                    continue;
+                }
+                observer.observe(target);
+            }
+        }
+    </script>
 </html>

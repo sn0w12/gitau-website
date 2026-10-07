@@ -38,7 +38,10 @@ uses no component library), the `snap-hover`/`snap-active` variants, and
 ## Deploy
 
 `wrangler.jsonc` serves `dist/` as static assets with no Worker script, so
-there is no per-request compute cost. `.github/workflows/deploy.yml` runs the
+there is no per-request compute cost. `dist/install.sh` is written at build
+time by `src/pages/install.sh.ts`, which downloads the script from
+`sn0w12/gitau` on `master`. If that download fails, the build fails rather than
+publishing a site without the script. `.github/workflows/deploy.yml` runs the
 checks on every push, deploys `main`, and uploads a preview version for pull
 requests.
 

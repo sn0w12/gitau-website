@@ -7,13 +7,17 @@
     "scripts": {
         "dev": "astro dev",
         "build": "astro build",
+        "predev": "node scripts/blurhash.mjs",
+        "prebuild": "node scripts/blurhash.mjs",
         "preview": "astro preview",
         "astro": "astro",
         "typecheck": "astro check",
+        "pretypecheck": "node scripts/blurhash.mjs",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
         "format": "oxfmt",
         "format:check": "oxfmt --check",
+        "cache:clear": "rm -rf node_modules/.cache/gitau-website",
         "deploy": "wrangler deploy",
         "preview:deploy": "wrangler versions upload"
     },
@@ -24,12 +28,18 @@
         "@fontsource/instrument-serif": "^5.3.0",
         "@tailwindcss/vite": "^4.3.3",
         "astro": "^7.3.6",
+        "blurhash": "^2.0.5",
+        "class-variance-authority": "^0.7.1",
+        "lucide-astro": "^0.556.0",
+        "tailwind-merge": "^3.7.0",
         "tailwindcss": "^4.3.3"
     },
     "devDependencies": {
         "@astrojs/check": "^0.9.10",
+        "@types/node": "^26.6.4",
         "oxfmt": "^0.68.0",
         "oxlint": "^1.83.0",
+        "sharp": "^0.35.5",
         "typescript": "^6.0.3",
         "wrangler": "^4.62.0"
     },

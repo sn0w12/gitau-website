@@ -1,0 +1,47 @@
+---
+import { Check } from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+import Button from "../ui/Button.astro";
+import SubjectIcon from "./SubjectIcon.astro";
+
+interface Props {
+    type: "CheckSuite" | "Commit" | "Discussion" | "Issue" | "PullRequest" | "Release" | "Other";
+    title: string;
+    meta: string;
+    unread?: boolean;
+}
+
+/* The mark-read action is rendered but inert, since the row is a mock. */
+const { type, title, meta, unread = false } = Astro.props;
+---
+
+<div class="flex items-center gap-2 px-2 py-2">
+    <span
+        class={cn(
+            "shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            unread ? "text-primary" : "text-muted-foreground"
+        )}
+    >
+        <SubjectIcon type={type} />
+    </span>
+    <div class="min-w-0 flex-1">
+        <div class="flex min-w-0 text-sm">
+            <span class="min-w-0 truncate font-medium">{title}</span>
+        </div>
+        <p class="truncate text-xs text-muted-foreground">{meta}</p>
+    </div>
+    <span class="flex size-8 shrink-0 items-center justify-center">
+        {
+            unread && (
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Mark ${title} read`}
+                >
+                    <Check />
+                </Button>
+            )
+        }
+    </span>
+</div>

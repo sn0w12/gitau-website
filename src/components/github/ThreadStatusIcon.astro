@@ -1,0 +1,63 @@
+---
+import {
+    CircleCheck,
+    CircleDashed,
+    CircleDot,
+    CircleSlash,
+    CopyMinus,
+    GitMerge,
+} from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+
+type ThreadStatus =
+    | "closed"
+    | "completed"
+    | "duplicate"
+    | "draft"
+    | "merged"
+    | "notPlanned"
+    | "open";
+
+interface Props {
+    status: ThreadStatus;
+    class?: string;
+}
+
+/* Color marks how a thread ended: work that landed stays blue, everything else
+ * recedes. */
+const STATUS_COLOR: Record<ThreadStatus, string> = {
+    closed: "text-muted-foreground",
+    completed: "text-info",
+    duplicate: "text-muted-foreground",
+    draft: "text-muted-foreground",
+    merged: "text-info",
+    notPlanned: "text-muted-foreground",
+    open: "text-success",
+};
+
+const STATUS_GLYPH = {
+    closed: CircleSlash,
+    completed: CircleCheck,
+    duplicate: CopyMinus,
+    draft: CircleDashed,
+    merged: GitMerge,
+    notPlanned: CircleSlash,
+    open: CircleDot,
+} satisfies Record<ThreadStatus, unknown>;
+
+const { status, class: className } = Astro.props;
+
+const Glyph = STATUS_GLYPH[status] as typeof CircleDot;
+---
+
+<span
+    class={cn(
+        "shrink-0",
+        STATUS_COLOR[status],
+        "[&_svg:not([class*='size-'])]:size-4",
+        className
+    )}
+>
+    <Glyph />
+</span>

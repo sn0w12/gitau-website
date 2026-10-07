@@ -1,0 +1,30 @@
+---
+import { cn } from "../lib/cn";
+
+interface Props {
+    repo: string;
+    class?: string;
+}
+
+const { repo, class: className } = Astro.props;
+
+const slash = repo.indexOf("/");
+const info =
+    slash === -1
+        ? { owner: null, title: repo }
+        : { owner: repo.slice(0, slash), title: repo.slice(slash + 1) };
+---
+
+{
+    info.title && (
+        <div class={cn("flex gap-0.5", className)}>
+            {info.owner && (
+                <>
+                    <span class="text-muted-foreground">{info.owner}</span>
+                    <span class="text-muted-foreground">/</span>
+                </>
+            )}
+            <span>{info.title}</span>
+        </div>
+    )
+}

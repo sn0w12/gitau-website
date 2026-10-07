@@ -1,0 +1,217 @@
+---
+import { ChevronsUpDown } from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+import {
+    selectTriggerIconClassName,
+    selectTriggerVariants,
+} from "./select-variants";
+
+interface SelectOption {
+    value: string;
+    label: string;
+}
+
+interface Props {
+    name: string;
+    label: string;
+    options: SelectOption[];
+    size?: "default" | "sm" | "lg";
+    class?: string;
+}
+
+/* The app positions the popup with a floating-ui positioner; here the page
+ * does it, so the popup opens below the trigger inside the block it belongs
+ * to. */
+const { name, label, options, size = "default", class: className } = Astro.props;
+
+const first = options[0];
+---
+
+<div class="relative" data-select={name}>
+    <button
+        type="button"
+        class={cn(
+            selectTriggerVariants({ size }),
+            "w-auto min-w-0 cursor-pointer",
+            className
+        )}
+        data-slot="select-trigger"
+        data-select-trigger
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-label={label}
+    >
+        <span class="flex-1 truncate" data-select-value>{first.label}</span>
+        <ChevronsUpDown class={selectTriggerIconClassName} />
+    </button>
+
+    <div
+        class="absolute right-0 z-50 mt-1 hidden w-max min-w-full select-none"
+        data-select-popup
+    >
+        <div
+            class="relative rounded-lg border bg-popover shadow-lg/5 not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]"
+        >
+            <div
+                class="max-h-64 overflow-y-auto p-1"
+                role="listbox"
+                aria-label={label}
+            >
+                {
+                    options.map((option, index) => (
+                        <div
+                            role="option"
+                            data-value={option.value}
+                            data-select-option
+                            aria-selected={index === 0 ? "true" : "false"}
+                            class="grid min-h-8 cursor-default grid-cols-[1rem_1fr] items-center gap-2 rounded-sm py-1 ps-2 pe-4 text-base outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground sm:min-h-7 sm:text-sm"
+                        >
+                            <span class="col-start-1 hidden aria-selected:block">
+                                <svg
+                                    aria-hidden="true"
+                                    fill="none"
+                                    height="24"
+                                    stroke="currentColor"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    viewBox="0 0 24 24"
+                                    width="24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="size-4.5 sm:size-4"
+                                >
+                                    <path d="M5.252 12.7 10.2 18.63 18.748 5.37" />
+                                </svg>
+                            </span>
+                            <span class="col-start-2 min-w-0 truncate">
+                                {option.label}
+                            </span>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function close(root: HTMLElement): void {
+        root.querySelector("[data-select-popup]")?.classList.add("hidden");
+        root.querySelector("[data-select-trigger]")?.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+        for (const option of root.querySelectorAll("[data-select-option]")) {
+            option.removeAttribute("data-highlighted");
+        }
+    }
+
+    function highlight(root: HTMLElement, next: Element | null): void {
+        const options = [
+            ...root.querySelectorAll<HTMLElement>("[data-select-option]"),
+        ];
+        const target = next ?? options[0];
+        if (!target) return;
+        for (const option of options) {
+            option.removeAttribute("data-highlighted");
+        }
+        target.setAttribute("data-highlighted", "");
+        target.scrollIntoView({ block: "nearest" });
+    }
+
+    function selected(root: HTMLElement): Element | null {
+        return root.querySelector('[data-select-option][aria-selected="true"]');
+    }
+
+    for (const root of document.querySelectorAll<HTMLElement>("[data-select]")) {
+        const trigger = root.querySelector<HTMLElement>("[data-select-trigger]");
+        const popup = root.querySelector("[data-select-popup]");
+        const value = root.querySelector("[data-select-value]");
+        if (!trigger || !popup || !value) continue;
+
+        const toggle = () => {
+            const open = popup.classList.contains("hidden");
+            if (open) {
+                // The highlight starts on the selected row, as the app's does.
+                highlight(root, selected(root));
+                popup.classList.remove("hidden");
+            } else {
+                close(root);
+            }
+            trigger.setAttribute("aria-expanded", open ? "true" : "false");
+        };
+
+        trigger.addEventListener("click", () => toggle());
+
+        const choose = (option: HTMLElement) => {
+            value.textContent = option.textContent?.trim() ?? "";
+            for (const candidate of root.querySelectorAll(
+                "[data-select-option]"
+            )) {
+                candidate.setAttribute(
+                    "aria-selected",
+                    candidate === option ? "true" : "false"
+                );
+            }
+            close(root);
+            root.dispatchEvent(
+                new CustomEvent("gitau:select", {
+                    bubbles: true,
+                    detail: {
+                        name: root.getAttribute("data-select"),
+                        value: option.getAttribute("data-value"),
+                    },
+                })
+            );
+        };
+
+        for (const option of root.querySelectorAll<HTMLElement>(
+            "[data-select-option]"
+        )) {
+            option.addEventListener("click", () => choose(option));
+            option.addEventListener("mouseenter", () => highlight(root, option));
+        }
+
+        trigger.addEventListener("keydown", (event) => {
+            const open = !popup.classList.contains("hidden");
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                if (!open) {
+                    toggle();
+                    return;
+                }
+                const options = [
+                    ...root.querySelectorAll<HTMLElement>("[data-select-option]"),
+                ];
+                const current = options.findIndex((option) =>
+                    option.hasAttribute("data-highlighted")
+                );
+                const step = event.key === "ArrowDown" ? 1 : -1;
+                const index =
+                    (current + step + options.length) % options.length;
+                highlight(root, options[index]);
+                return;
+            }
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                if (!open) {
+                    toggle();
+                    return;
+                }
+                const active = root.querySelector<HTMLElement>(
+                    "[data-select-option][data-highlighted]"
+                );
+                if (active) choose(active);
+                return;
+            }
+            if (event.key === "Escape") {
+                close(root);
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!root.contains(event.target as Node)) close(root);
+        });
+    }
+</script>

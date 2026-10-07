@@ -1,0 +1,52 @@
+---
+import { cn } from "../../lib/cn";
+
+interface Props {
+    class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<span
+    class={cn(
+        "inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-background align-middle text-xs font-medium select-none",
+        className
+    )}
+    data-slot="avatar"
+>
+    <slot />
+</span>
+
+<style>
+    /* The app gets this from Base UI's Avatar, which keeps the fallback hidden
+     * until the image resolves. Global on both parts because the image and the
+     * fallback are slotted in from their own components, which do not share a
+     * scope id with this one. */
+    :global([data-slot="avatar"]:has([data-slot="avatar-image"]))
+        :global([data-slot="avatar-fallback"]) {
+        display: none;
+    }
+</style>
+
+<script>
+    /* A dead URL is the case `:has()` cannot see, since the element is still
+     * there. Dropping the failed image unsatisfies the selector and the
+     * fallback comes back. */
+    for (const image of document.querySelectorAll<HTMLImageElement>(
+        '[data-slot="avatar-image"]'
+    )) {
+        if (image.complete && image.naturalWidth === 0) {
+            image.remove();
+            continue;
+        }
+
+        image.addEventListener(
+            "error",
+            () => {
+                image.remove();
+            },
+            { once: true }
+        );
+    }
+</script>

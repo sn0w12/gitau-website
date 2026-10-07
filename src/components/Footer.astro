@@ -1,0 +1,110 @@
+---
+import { Github } from "lucide-astro";
+
+import {
+    DISCUSSIONS_URL,
+    ISSUES_URL,
+    LICENSE_NAME,
+    LICENSE_URL,
+    README_URL,
+    RELEASES_URL,
+    REPO,
+    REPO_URL,
+} from "../lib/site";
+import Logo from "./Logo.astro";
+
+interface FooterLink {
+    href: string;
+    label: string;
+    external?: boolean;
+}
+
+const columns: { title: string; links: FooterLink[] }[] = [
+    {
+        title: "Product",
+        links: [
+            { href: "/download", label: "Download" },
+            { href: RELEASES_URL, label: "Releases", external: true },
+        ],
+    },
+    {
+        title: "Resources",
+        links: [
+            { href: README_URL, label: "Documentation", external: true },
+            { href: ISSUES_URL, label: "Report an issue", external: true },
+            { href: DISCUSSIONS_URL, label: "Discussions", external: true },
+        ],
+    },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border/70">
+    <div class="shell py-14">
+        <div class="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
+            <div>
+                <Logo />
+                <p class="mt-4 max-w-xs text-sm text-muted-foreground">
+                    A cross-platform Git desktop client.
+                </p>
+                <a
+                    href={REPO_URL}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <Github class="size-4" />
+                    {REPO}
+                </a>
+            </div>
+
+            {
+                columns.map((column) => (
+                    <div>
+                        <h2 class="font-mono text-xs tracking-wide text-muted-foreground uppercase">
+                            {column.title}
+                        </h2>
+                        <ul class="mt-4 space-y-3">
+                            {column.links.map((link) => (
+                                <li>
+                                    <a
+                                        href={link.href}
+                                        class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                                        target={
+                                            link.external ? "_blank" : undefined
+                                        }
+                                        rel={
+                                            link.external
+                                                ? "noreferrer noopener"
+                                                : undefined
+                                        }
+                                    >
+                                        {link.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))
+            }
+        </div>
+
+        <div
+            class="mt-12 flex flex-col gap-3 border-t border-border/70 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
+        >
+            <p>© {year} gitau. Built with Rust, Tauri, and React.</p>
+            <p>
+                Source is available under the{" "}
+                <a
+                    href={LICENSE_URL}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="transition-colors hover:text-foreground"
+                >
+                    {LICENSE_NAME} license
+                </a>.
+            </p>
+        </div>
+    </div>
+</footer>

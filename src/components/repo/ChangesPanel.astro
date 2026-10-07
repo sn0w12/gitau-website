@@ -1,0 +1,229 @@
+---
+import { Archive, ChevronUp, Minus, Plus, Undo2 } from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+import ChangeIcon from "../ChangeIcon.astro";
+import SplitPath from "../SplitPath.astro";
+import Badge from "../ui/Badge.astro";
+import Button from "../ui/Button.astro";
+import Checkbox from "../ui/Checkbox.astro";
+import Frame from "../ui/Frame.astro";
+import FramePanel from "../ui/FramePanel.astro";
+import Input from "../ui/Input.astro";
+import Textarea from "../ui/Textarea.astro";
+
+type ChangeKind =
+    | "added"
+    | "conflicted"
+    | "copied"
+    | "deleted"
+    | "modified"
+    | "renamed"
+    | "typeChanged"
+    | "untracked";
+
+interface Change {
+    kind: ChangeKind;
+    path: string;
+    checked?: boolean;
+}
+
+interface Props {
+    branch: string;
+    staged?: Change[];
+    unstaged?: Change[];
+    filter?: string;
+    class?: string;
+}
+
+/* The app's scroll area and animation wrappers are left out. */
+const { branch, staged = [], unstaged = [], filter, class: className } =
+    Astro.props;
+
+const allChecked = (entries: Change[]) =>
+    entries.length > 0 && entries.every((entry) => entry.checked);
+const someChecked = (entries: Change[]) =>
+    entries.some((entry) => entry.checked) && !allChecked(entries);
+---
+
+<Frame class={cn("flex min-h-0 flex-1 flex-col", className)}>
+    <FramePanel class="flex min-h-0 flex-1 flex-col p-0">
+        <div class="flex min-h-0 flex-1 flex-col">
+            <div class="border-b p-0.5">
+                <Input
+                    id="changes-filter-input"
+                    value={filter}
+                    placeholder="Filter files..."
+                    aria-label="Filter files"
+                />
+            </div>
+
+            <div class="min-h-0 flex-1">
+                <div class="flex items-center justify-between pe-1">
+                    <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-1 text-foreground">
+                        <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
+                        <Checkbox
+                            checked={allChecked(staged)}
+                            indeterminate={someChecked(staged)}
+                            disabled={staged.length === 0}
+                            aria-label="Select all Staged Changes"
+                        />
+                        <span class="font-semibold">Staged Changes</span>
+                        <Badge
+                            class="h-6.5 rounded-md font-mono sm:h-5.5"
+                            variant="outline"
+                        >
+                            {staged.length}
+                        </Badge>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-0.5 pr-2.5">
+                        <Button
+                            size="icon-2xs"
+                            aria-label="Unstage all"
+                            disabled={staged.length === 0}
+                        >
+                            <Minus />
+                        </Button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    {
+                        staged.map((entry) => (
+                            <div class="flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent">
+                                <div class="flex min-w-0 items-center gap-1">
+                                    <ChangeIcon
+                                        change={entry.kind}
+                                        class="shrink-0"
+                                    />
+                                    <Checkbox
+                                        checked={entry.checked}
+                                        aria-label={`Select ${entry.path}`}
+                                    />
+                                    <div class="min-w-0">
+                                        <SplitPath path={entry.path} />
+                                    </div>
+                                </div>
+                                <div class="flex gap-0.5 pr-2.5 pl-1">
+                                    <Button
+                                        size="icon-2xs"
+                                        aria-label={`Unstage ${entry.path}`}
+                                    >
+                                        <Minus />
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div>
+
+                <div class="border-t">
+                    <div class="flex items-center justify-between pe-1">
+                        <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-1 text-foreground">
+                            <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
+                            <Checkbox
+                                checked={allChecked(unstaged)}
+                                indeterminate={someChecked(unstaged)}
+                                disabled={unstaged.length === 0}
+                                aria-label="Select all Changes"
+                            />
+                            <span class="font-semibold">Changes</span>
+                            <Badge
+                                class="h-6.5 rounded-md font-mono sm:h-5.5"
+                                variant="outline"
+                            >
+                                {unstaged.length}
+                            </Badge>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-0.5 pr-2.5">
+                            <Button
+                                size="icon-2xs"
+                                aria-label="Stash all changes"
+                                disabled={unstaged.length === 0}
+                            >
+                                <Archive />
+                            </Button>
+                            <Button
+                                size="icon-2xs"
+                                variant="destructive"
+                                aria-label="Discard all changes"
+                                disabled={unstaged.length === 0}
+                            >
+                                <Undo2 />
+                            </Button>
+                            <Button
+                                size="icon-2xs"
+                                variant="info"
+                                aria-label="Stage all changes"
+                                disabled={unstaged.length === 0}
+                            >
+                                <Plus />
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col">
+                        {
+                            unstaged.map((entry) => (
+                                <div class="flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent">
+                                    <div class="flex min-w-0 items-center gap-1">
+                                        <ChangeIcon
+                                            change={entry.kind}
+                                            class="shrink-0"
+                                        />
+                                        <Checkbox
+                                            checked={entry.checked}
+                                            aria-label={`Select ${entry.path}`}
+                                        />
+                                        <div class="min-w-0">
+                                            <SplitPath path={entry.path} />
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-0.5 pr-2.5 pl-1">
+                                        <Button
+                                            size="icon-2xs"
+                                            variant="destructive"
+                                            aria-label={`Discard changes in ${entry.path}`}
+                                        >
+                                            <Undo2 />
+                                        </Button>
+                                        <Button
+                                            size="icon-2xs"
+                                            variant="info"
+                                            aria-label={`Stage ${entry.path}`}
+                                        >
+                                            <Plus />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t px-0.5 pt-1 pb-0.5">
+                <fieldset class="flex flex-col gap-1">
+                    <Input
+                        id="commit-summary-input"
+                        placeholder="Summary (required)"
+                        aria-label="Commit summary"
+                    />
+                    <Textarea
+                        placeholder="Description"
+                        aria-label="Commit description"
+                        rows={2}
+                    />
+                    <Button
+                        variant="info"
+                        type="submit"
+                        class="w-full text-background dark:text-foreground"
+                        disabled
+                    >
+                        Commit to {branch}
+                    </Button>
+                </fieldset>
+            </div>
+        </div>
+    </FramePanel>
+</Frame>

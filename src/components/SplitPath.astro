@@ -1,0 +1,46 @@
+---
+import { cn } from "../lib/cn";
+
+interface Props {
+    path: string;
+    class?: string;
+}
+
+
+const { path, class: className } = Astro.props;
+
+const [before, filename] = path.match(/^(.*)\/([^/]*)$/)?.slice(1) ?? [
+    "",
+    path,
+];
+const midpoint = Math.floor(filename.length / 2);
+const head = filename.length > 12 ? filename.slice(0, midpoint) : filename;
+const tail = filename.length > 12 ? filename.slice(midpoint) : "";
+---
+
+<div class={cn("flex min-w-0 items-baseline", className)}>
+    {
+        before && (
+            <span
+                class="min-w-0 truncate text-muted-foreground"
+                style="flex-shrink: 100000"
+            >
+                {before}
+            </span>
+        )
+    }
+    <span class="max-w-full min-w-0 truncate whitespace-nowrap">
+        {before && <span class="text-muted-foreground">/</span>}
+        <span class="font-semibold">{head}</span>
+    </span>
+    {
+        tail && (
+            <span
+                dir="rtl"
+                class="max-w-full min-w-0 truncate font-semibold whitespace-nowrap"
+            >
+                <bdi>{tail}</bdi>
+            </span>
+        )
+    }
+</div>

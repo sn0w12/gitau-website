@@ -1,0 +1,143 @@
+---
+import { Apple, Download, ExternalLink, Terminal } from "lucide-astro";
+
+import InstallCommand from "../components/InstallCommand.astro";
+import Button from "../components/ui/Button.astro";
+import Select from "../components/ui/Select.astro";
+import WindowsIcon from "../components/WindowsIcon.astro";
+import Layout from "../layouts/Layout.astro";
+import {
+    formatBytes,
+    getLatestRelease,
+    platformOptions,
+} from "../lib/releases";
+import type { DownloadOption } from "../lib/releases";
+import { installCommand } from "../lib/site";
+
+const release = await getLatestRelease();
+
+/* The origin rides in from `Astro.site`, so the command a visitor copies
+ * points at the domain in astro.config.mjs. The command then re-points itself
+ * at the address bar's origin at runtime. */
+const command = installCommand(Astro.site ?? Astro.url);
+
+const released = release.publishedAt
+    ? new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(
+          new Date(release.publishedAt)
+      )
+    : null;
+
+const OS_ICON = {
+    linux: Terminal,
+    macos: Apple,
+    windows: WindowsIcon,
+};
+
+function variantOptions(option: DownloadOption) {
+    return option.variants.map((variant) => {
+        const size = formatBytes(variant.size);
+        return {
+            value: variant.url,
+            label: size ? `${variant.label} · ${size}` : variant.label,
+        };
+    });
+}
+
+/* Flattened so the template reads one shape per platform instead of narrowing
+ * a union inside the markup. */
+const blocks = platformOptions(release).map((option) => ({
+    id: option.id,
+    label: option.label,
+    Icon: OS_ICON[option.id],
+    primaryUrl: option.kind === "download" ? option.variants[0].url : null,
+    select:
+        option.kind === "download" && option.variants.length > 1
+            ? variantOptions(option)
+            : null,
+}));
+---
+
+<Layout
+    title="Download"
+    description={`Download gitau ${release.version} for macOS, Linux, and Windows.`}
+>
+    <div class="shell py-16 sm:py-20">
+        <div class="mx-auto flex max-w-xl flex-col gap-10">
+            <div class="flex items-end justify-between gap-4">
+                <div class="flex flex-col gap-1">
+                    <h1 class="font-display text-5xl tracking-tight sm:text-6xl">
+                        <span class="sr-only">Download gitau </span>
+                        {release.version}
+                    </h1>
+                    {
+                        released && (
+                            <p class="text-sm text-muted-foreground">
+                                {released}
+                            </p>
+                        )
+                    }
+                </div>
+                <a
+                    href={release.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="inline-flex shrink-0 items-center gap-1 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                >
+                    Release notes
+                    <ExternalLink class="size-3.5" />
+                </a>
+            </div>
+
+            <div class="flex flex-col gap-4">
+            {
+                blocks.map(({ Icon, ...block }) => (
+                    <div class="flex flex-col gap-3">
+                        <header class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 text-sm">
+                                <Icon class="size-3.5 shrink-0 text-muted-foreground" />
+                                <span class="font-medium">{block.label}</span>
+                            </div>
+                            {block.select && (
+                                <Select
+                                    name={block.id}
+                                    label={`${block.label} build`}
+                                    size="sm"
+                                    options={block.select}
+                                />
+                            )}
+                        </header>
+
+                        {block.primaryUrl ? (
+                            <div
+                                data-variant-download={block.id}
+                                class="flex flex-col gap-2"
+                            >
+                                <Button
+                                    href={block.primaryUrl}
+                                    size="lg"
+                                    class="w-full"
+                                >
+                                    <Download class="size-4" />
+                                    Download Now
+                                </Button>
+                            </div>
+                        ) : (
+                            <InstallCommand command={command} />
+                        )}
+                    </div>
+                ))
+            }
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<script>
+    document.addEventListener("gitau:select", (event) => {
+        const { name, value } = (event as CustomEvent).detail ?? {};
+        const link = document.querySelector(
+            `[data-variant-download="${name}"] a`
+        );
+        if (link && value) link.setAttribute("href", value);
+    });
+</script>

@@ -1,0 +1,23 @@
+---
+import { cn } from "../lib/cn";
+
+interface Props {
+    class?: string;
+}
+
+/* Lucide has no Windows mark, so the site carries its own four-pane glyph in
+ * the same 24px grid and stroke conventions as the rest of the icon set. */
+const { class: className } = Astro.props;
+---
+
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    class={cn("size-5", className)}
+    aria-hidden="true"
+>
+    <path
+        d="M3 5.5 10 4.4v7.1H3zM11 4.2 21 3v8.5h-10zM3 12.5h7v7.1L3 18.5zM11 12.5h10V21l-10-1z"
+    ></path>
+</svg>

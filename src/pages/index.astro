@@ -1,13 +1,95 @@
 ---
+import { Command, Download, Github, Zap } from "lucide-astro";
+
+import FeatureShowcase from "../components/FeatureShowcase.astro";
+import Screenshot from "../components/Screenshot.astro";
+import Button from "../components/ui/Button.astro";
+import Section from "../components/Section.astro";
 import Layout from "../layouts/Layout.astro";
+import { REPO_URL } from "../lib/site";
+
+const pillars = [
+    {
+        Icon: Zap,
+        title: "Rust under the hood",
+        body: "Status, diffs, and history are computed in Rust through libgit2 and gitoxide.",
+    },
+    {
+        Icon: Command,
+        title: "Keyboard first",
+        body: "A command palette and shortcuts reach every action, from staging a file to switching repository.",
+    },
+    {
+        Icon: Github,
+        title: "Review without a browser",
+        body: "Pull requests, reviews, and issue threads live in the app, so a line comment never needs a tab switch.",
+    },
+];
 ---
 
-<Layout
-    title="gitau"
-    description="A cross-platform Git desktop client."
->
-    <main class="grid min-h-screen place-items-center">
-        <div class="carbon h-32 w-64 rounded-lg" aria-hidden="true"></div>
-        <h1 class="font-heading text-4xl">gitau</h1>
-    </main>
+<Layout title="gitau" preloadHero>
+    <section class="relative overflow-hidden border-b border-border/70">
+        <div
+            class="carbon pointer-events-none absolute inset-0 [--pattern-opacity:0.32] [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)] dark:[--pattern-opacity:0.18]"
+            aria-hidden="true"
+        >
+        </div>
+        <div class="shell relative pt-20 pb-16 sm:pt-28">
+            <div class="mx-auto max-w-3xl text-center">
+                <h1
+                    class="font-heading text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl"
+                >
+                    GITAU
+                </h1>
+                <p
+                    class="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground text-pretty"
+                >
+                    A desktop Git client for Linux, macOS, and Windows. Stage,
+                    commit, diff, and review without leaving the app.
+                </p>
+                <div
+                    class="mt-8 flex flex-wrap items-center justify-center gap-3"
+                >
+                    <Button href="/download" size="lg" variant="info">
+                        <Download class="size-4" />
+                        Download gitau
+                    </Button>
+                    <Button href={REPO_URL} external size="lg">
+                        <Github class="size-4" />
+                        Clone source
+                    </Button>
+                </div>
+            </div>
+
+            <div class="mt-16">
+                <Screenshot
+                    light="/repo-page-light.webp"
+                    dark="/repo-page-dark.webp"
+                    alt="Screenshot of gitau open on a repository, showing the changes panel and diff."
+                    width={1402}
+                    height={920}
+                />
+            </div>
+        </div>
+    </section>
+
+    <Section>
+        <div data-reveal-grid class="grid gap-8 md:grid-cols-3 md:gap-6">
+            {
+                pillars.map(({ Icon, title, body }) => (
+                    <div data-reveal class="flex flex-col">
+                        <div class="flex items-center gap-2.5">
+                            <Icon class="size-4 shrink-0 text-muted-foreground" />
+                            <h2 class="font-display text-2xl">{title}</h2>
+                        </div>
+                        <p class="mt-2 text-sm text-muted-foreground">
+                            {body}
+                        </p>
+                    </div>
+                ))
+            }
+        </div>
+    </Section>
+
+    <FeatureShowcase />
 </Layout>

@@ -1,0 +1,111 @@
+---
+import { Check, Copy } from "lucide-astro";
+
+import { cn } from "../lib/cn";
+import { buttonVariants } from "./ui/button-variants";
+import Frame from "./ui/Frame.astro";
+import FramePanel from "./ui/FramePanel.astro";
+
+interface Props {
+    command: string;
+}
+
+type TokenType = "keyword" | "symbol" | "url";
+
+interface Token {
+    type: TokenType;
+    value: string;
+}
+
+/* Matches a URL first so the pipe in `curl ... | sh` is never swallowed by the
+ * URL's own character class. */
+const TOKEN_PATTERN = /(?:https?|ftp):\/\/[^\s|]+|\||\S+/g;
+const URL_PREFIX = /^(?:https?|ftp):\/\//;
+
+function parseCommand(input: string): Token[] {
+    return [...input.matchAll(TOKEN_PATTERN)].map(([value]) => ({
+        type: URL_PREFIX.test(value) ? "url" : value === "|" ? "symbol" : "keyword",
+        value,
+    }));
+}
+
+const { command } = Astro.props;
+
+const tokens = parseCommand(command);
+---
+
+<Frame class="group/code relative">
+    <FramePanel class="p-0 font-mono text-xs">
+        <div data-install-root>
+            <button
+                type="button"
+                data-copy={command}
+                aria-label="Copy install command"
+                class={cn(
+                    buttonVariants({ variant: "ghost", size: "icon-xs" }),
+                    "group/copy absolute end-1 top-1 z-10 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/code:opacity-100 pointer-coarse:opacity-100"
+                )}
+            >
+                <Copy class="group-data-[copied]/copy:hidden" />
+                <Check class="hidden group-data-[copied]/copy:block" />
+            </button>
+            <div class="overflow-x-auto p-2 pr-10 whitespace-pre install">
+                <span class="text-muted-foreground select-none">$ </span>{
+                    tokens.map((token, index) => (
+                        <>
+                            {index > 0 && " "}
+                            <span
+                                data-install-token={token.type}
+                            >
+                                {token.value}
+                            </span>
+                        </>
+                    ))
+                }
+            </div>
+        </div>
+    </FramePanel>
+</Frame>
+
+<script>
+    const RESET_MS = 1600;
+
+    function flash(button: Element): void {
+        button.setAttribute("data-copied", "");
+        window.setTimeout(() => {
+            button.removeAttribute("data-copied");
+        }, RESET_MS);
+    }
+
+    /* The command has to resolve wherever the page is served from, so the
+     * origin is swapped for the one in the address bar. The configured origin
+     * is what the markup ships with, for a visitor without scripts. Only the
+     * URL token is rewritten, since rewriting the container would flatten the
+     * token spans and lose the coloring. */
+    for (const root of document.querySelectorAll("[data-install-root]")) {
+        const url = root.querySelector('[data-install-token="url"]');
+        const copy = root.querySelector("[data-copy]");
+        const rendered = url?.textContent ?? "";
+        const rewritten = rendered.replace(
+            /^https?:\/\/[^/\s]+/,
+            location.origin
+        );
+        if (!url || !copy || rewritten === rendered) continue;
+        url.textContent = rewritten;
+        copy.setAttribute(
+            "data-copy",
+            (copy.getAttribute("data-copy") ?? "").replace(rendered, rewritten)
+        );
+    }
+
+    for (const button of document.querySelectorAll("[data-copy]")) {
+        button.addEventListener("click", () => {
+            if (!navigator.clipboard) return;
+            const value = button.getAttribute("data-copy") ?? "";
+            navigator.clipboard.writeText(value).then(
+                () => flash(button),
+                () => undefined
+            );
+        });
+    }
+</script>

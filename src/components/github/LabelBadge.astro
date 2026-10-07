@@ -1,0 +1,18 @@
+---
+import { getTextColor } from "../../lib/text-color";
+import Badge from "../ui/Badge.astro";
+
+interface Props {
+    name: string;
+    color: string;
+}
+
+const { name, color } = Astro.props;
+
+const classes =
+    getTextColor(color) === "bright"
+        ? "text-background dark:text-foreground"
+        : "text-foreground dark:text-background";
+---
+
+<Badge class={classes} style={`background-color: #${color}`}>{name}</Badge>

@@ -1,0 +1,38 @@
+---
+import {
+    Bell,
+    CircleDot,
+    GitCommitHorizontal,
+    GitPullRequestArrow,
+    Tag,
+} from "lucide-astro";
+
+type SubjectType =
+    | "CheckSuite"
+    | "Commit"
+    | "Discussion"
+    | "Issue"
+    | "PullRequest"
+    | "Release";
+
+interface Props {
+    type: SubjectType | "Other";
+    class?: string;
+}
+
+const SUBJECT_GLYPH = {
+    CheckSuite: Bell,
+    Commit: GitCommitHorizontal,
+    Discussion: Bell,
+    Issue: CircleDot,
+    PullRequest: GitPullRequestArrow,
+    Release: Tag,
+    Other: Bell,
+} satisfies Record<string, unknown>;
+
+const { type, class: className } = Astro.props;
+
+const Glyph = SUBJECT_GLYPH[type] as typeof Bell;
+---
+
+<Glyph class={className} />

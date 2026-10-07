@@ -1,0 +1,95 @@
+---
+import { GitFork, Star } from "lucide-astro";
+
+import { formatCount } from "../../lib/format";
+import Avatar from "../ui/Avatar.astro";
+import AvatarFallback from "../ui/AvatarFallback.astro";
+import AvatarImage from "../ui/AvatarImage.astro";
+import Frame from "../ui/Frame.astro";
+import FrameFooter from "../ui/FrameFooter.astro";
+import FramePanel from "../ui/FramePanel.astro";
+import RepoLabel from "../RepoLabel.astro";
+
+interface Language {
+    language: string;
+    percent: number;
+    color?: string;
+}
+
+interface Props {
+    repo: string;
+    description?: string;
+    stars?: number;
+    forks?: number;
+    avatarSrc?: string;
+    avatarInitial: string;
+    languages?: Language[];
+}
+
+const {
+    repo,
+    description,
+    stars,
+    forks,
+    avatarSrc,
+    avatarInitial,
+    languages = [],
+} = Astro.props;
+/* The app puts the language percentage in a tooltip; the site has no tooltip,
+ * so it rides on the segment's title attribute. */
+
+const languageColor = (item: Language) =>
+    item.color ? item.color : "var(--muted-foreground)";
+---
+
+<Frame class="grid h-full grid-rows-[1fr_auto] text-sm">
+    <FramePanel class="p-3">
+        <div class="flex items-center gap-1">
+            <Avatar class="size-6 rounded-lg">
+                <AvatarImage src={avatarSrc} alt={`${repo} icon`} />
+                <AvatarFallback>{avatarInitial}</AvatarFallback>
+            </Avatar>
+            <RepoLabel class="gap-0" repo={repo} />
+        </div>
+        {description && <p class="line-clamp-2 pt-0.5">{description}</p>}
+    </FramePanel>
+    {
+        (stars !== undefined ||
+            forks !== undefined ||
+            languages.length > 0) && (
+            <FrameFooter class="flex items-center gap-1.5 px-2 py-1 font-mono [&_svg:not([class*='size-'])]:size-4">
+                {stars !== undefined && (
+                    <span
+                        class="flex items-center gap-0.5"
+                        title={`${stars.toLocaleString("en")} stars`}
+                    >
+                        <Star />
+                        {formatCount(stars)}
+                    </span>
+                )}
+                {forks !== undefined && (
+                    <span
+                        class="flex items-center gap-0.5"
+                        title={`${forks.toLocaleString("en")} forks`}
+                    >
+                        <GitFork />
+                        {formatCount(forks)}
+                    </span>
+                )}
+                {languages.length > 0 && (
+                    <div class="ml-auto flex max-w-52 min-w-0 flex-1 flex-col gap-1">
+                        <div class="flex h-1.5 gap-px overflow-hidden rounded-full">
+                            {languages.map((item) => (
+                                <span
+                                    class="h-full"
+                                    style={`width: ${item.percent}%; background-color: ${languageColor(item)}`}
+                                    title={`${item.language} ${item.percent}%`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </FrameFooter>
+        )
+    }
+</Frame>

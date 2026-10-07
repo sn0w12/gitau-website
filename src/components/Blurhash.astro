@@ -1,0 +1,47 @@
+---
+import { cn } from "../lib/cn";
+
+interface Props {
+    hash: string;
+    class?: string;
+}
+
+const { hash, class: className } = Astro.props;
+
+const PIXELS = 32;
+---
+
+<canvas
+    data-blurhash={hash}
+    width={PIXELS}
+    height={PIXELS}
+    aria-hidden="true"
+    class={cn("absolute inset-0 size-full scale-110", className)}
+></canvas>
+
+<script>
+    import { decode } from "blurhash";
+
+    const SIZE = 32;
+
+    for (const canvas of document.querySelectorAll<HTMLCanvasElement>(
+        "[data-blurhash]"
+    )) {
+        const hash = canvas.dataset.blurhash;
+        if (!hash) continue;
+
+        const pixels = decode(hash, SIZE, SIZE);
+        const context = canvas.getContext("2d");
+        if (!context) continue;
+
+        context.putImageData(
+            new ImageData(
+                pixels as unknown as Uint8ClampedArray<ArrayBuffer>,
+                SIZE,
+                SIZE
+            ),
+            0,
+            0
+        );
+    }
+</script>

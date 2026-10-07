@@ -1,0 +1,46 @@
+---
+import LabelBadge from "./LabelBadge.astro";
+import ThreadStatusIcon from "./ThreadStatusIcon.astro";
+
+interface Label {
+    name: string;
+    color: string;
+}
+
+interface Props {
+    title: string;
+    number: number;
+    author?: string;
+    date?: string;
+    status:
+        | "closed"
+        | "completed"
+        | "duplicate"
+        | "draft"
+        | "merged"
+        | "notPlanned"
+        | "open";
+    labels?: Label[];
+}
+
+const { title, number, author, date, status, labels = [] } = Astro.props;
+
+const meta = [`#${number}`, author, date].filter(Boolean).join(" · ");
+---
+
+<div class="flex items-center gap-2 px-2 py-2">
+    <ThreadStatusIcon status={status} />
+    <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+            <div class="flex min-w-0 flex-1 text-sm">
+                <span class="min-w-0 truncate font-medium">{title}</span>
+            </div>
+            <div class="flex shrink-0 flex-wrap gap-1">
+                {labels.map((label) => (
+                    <LabelBadge name={label.name} color={label.color} />
+                ))}
+            </div>
+        </div>
+        <p class="truncate text-xs text-muted-foreground">{meta}</p>
+    </div>
+</div>

@@ -1,0 +1,13 @@
+---
+import { cn } from "../../lib/cn";
+
+interface Props {
+    class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<footer class={cn("px-5 py-4", className)} data-slot="frame-panel-footer">
+    <slot />
+</footer>

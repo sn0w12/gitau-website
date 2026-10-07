@@ -1,0 +1,299 @@
+---
+import Badge from "../ui/Badge.astro";
+
+interface LaneEdge {
+    fromLane: number;
+    toLane: number;
+}
+
+interface CommitRow {
+    id: string;
+    summary: string;
+    refs: string[];
+    author: string;
+    date: string;
+    lane: number;
+    kind: "commit" | "merge";
+    edges: LaneEdge[];
+}
+
+interface Props {
+    rows: CommitRow[];
+}
+
+/* Geometry, lane colors, and the collapsing rule are ported from the app's
+ * `src/components/repo/history/commit-graph-view.tsx`. */
+const GRAPH_ROW_HEIGHT_PX = 32;
+const LANE_COLORS = 8;
+const LANE_GAP = 16;
+const LANE_PAD = 14;
+const EDGE_STROKE = 2;
+const LANE_BLEND_FRACTION = 0.15;
+const NODE_RADIUS = 6;
+const MERGE_RADIUS = 7;
+const SQUIRCLE_CORNER = 0.7;
+const NODE_CORE_INSET = 4;
+
+function laneVar(lane: number): string {
+    return `var(--graph-lane-${((lane % LANE_COLORS) + LANE_COLORS) % LANE_COLORS})`;
+}
+
+function laneX(lane: number): number {
+    return LANE_PAD + lane * LANE_GAP;
+}
+
+function laneAlpha(lane: number, percent: number): string {
+    return `color-mix(in srgb, ${laneVar(lane)} ${percent}%, transparent)`;
+}
+
+/** A pushed branch arrives twice, once plain and once through its remote.
+ *  Refs sharing a trailing segment are one branch, and the shallowest name
+ *  wins. */
+function collapseRefs(refs: string[]): string[] {
+    const shallowest = new Map<string, { ref: string; depth: number }>();
+    for (const ref of refs) {
+        const slash = ref.lastIndexOf("/");
+        const tail = slash === -1 ? ref : ref.slice(slash + 1);
+        const depth = slash === -1 ? 0 : ref.split("/").length;
+        const seen = shallowest.get(tail);
+        if (seen === undefined || depth < seen.depth) {
+            shallowest.set(tail, { ref, depth });
+        }
+    }
+    return [...shallowest.values()].map((entry) => entry.ref);
+}
+
+function shortId(id: string): string {
+    return id.slice(0, 7);
+}
+
+const { rows } = Astro.props;
+
+const maxLane = rows.reduce((highest, row) => Math.max(highest, row.lane), 0);
+const railWidth = laneX(maxLane) + MERGE_RADIUS + EDGE_STROKE;
+const railHeight = rows.length * GRAPH_ROW_HEIGHT_PX;
+
+function nodeGeometry(row: CommitRow, index: number) {
+    const cx = laneX(row.lane);
+    const cy = index * GRAPH_ROW_HEIGHT_PX + GRAPH_ROW_HEIGHT_PX / 2;
+    return { cx, cy, stroke: laneVar(row.lane) };
+}
+
+function edgePath(edge: LaneEdge, cy: number) {
+    const fromX = laneX(edge.fromLane);
+    const toX = laneX(edge.toLane);
+    const yNext = cy + GRAPH_ROW_HEIGHT_PX;
+    if (fromX === toX) {
+        return { d: null, fromX, toX, yNext };
+    }
+    const yMid = cy + GRAPH_ROW_HEIGHT_PX / 2;
+    const dx = toX > fromX ? 1 : -1;
+    const r = Math.min(8, Math.abs(toX - fromX) / 2, GRAPH_ROW_HEIGHT_PX / 2 - 2);
+    return {
+        d: [
+            `M ${fromX} ${cy}`,
+            `L ${fromX} ${yMid - r}`,
+            `Q ${fromX} ${yMid} ${fromX + dx * r} ${yMid}`,
+            `L ${toX - dx * r} ${yMid}`,
+            `Q ${toX} ${yMid} ${toX} ${yMid + r}`,
+            `L ${toX} ${yNext}`,
+        ].join(" "),
+        fromX,
+        toX,
+        yNext,
+    };
+}
+---
+
+<div class="relative">
+    <svg
+        class="pointer-events-none absolute top-0 left-0 -ml-3"
+        width={railWidth}
+        height={railHeight}
+        viewBox={`0 0 ${railWidth} ${railHeight}`}
+        fill="none"
+        aria-hidden="true"
+    >
+        <defs>
+            {
+                rows.flatMap((row, index) =>
+                    row.edges
+                        .map((edge, edgeIndex) => ({ edge, edgeIndex }))
+                        .filter(
+                            ({ edge }) =>
+                                laneVar(edge.fromLane) !== laneVar(edge.toLane)
+                        )
+                        .map(({ edge, edgeIndex }) => {
+                            const cy =
+                                index * GRAPH_ROW_HEIGHT_PX +
+                                GRAPH_ROW_HEIGHT_PX / 2;
+                            const blendLength =
+                                GRAPH_ROW_HEIGHT_PX * LANE_BLEND_FRACTION;
+                            const blendStart =
+                                cy + (GRAPH_ROW_HEIGHT_PX - blendLength) / 2;
+                            const blendEnd = blendStart + blendLength;
+                            const toX = laneX(edge.toLane);
+                            return (
+                                <linearGradient
+                                    id={`lane-${index}-${edgeIndex}`}
+                                    gradientUnits="userSpaceOnUse"
+                                    x1={toX}
+                                    y1={blendStart}
+                                    x2={toX}
+                                    y2={blendEnd}
+                                >
+                                    <stop
+                                        offset="0"
+                                        style={`stop-color: ${laneVar(edge.fromLane)}`}
+                                    />
+                                    <stop
+                                        offset="0.5"
+                                        style={`stop-color: color-mix(in oklch, ${laneVar(edge.fromLane)} 50%, ${laneVar(edge.toLane)})`}
+                                    />
+                                    <stop
+                                        offset="1"
+                                        style={`stop-color: ${laneVar(edge.toLane)}`}
+                                    />
+                                </linearGradient>
+                            );
+                        })
+                )
+            }
+        </defs>
+
+        {
+            rows.flatMap((row, index) =>
+                row.edges.map((edge, edgeIndex) => {
+                    const cy =
+                        index * GRAPH_ROW_HEIGHT_PX +
+                        GRAPH_ROW_HEIGHT_PX / 2;
+                    const { d, fromX, yNext } = edgePath(edge, cy);
+                    const stroke =
+                        laneVar(edge.fromLane) === laneVar(edge.toLane)
+                            ? laneVar(edge.toLane)
+                            : `url(#lane-${index}-${edgeIndex})`;
+                    return d === null ? (
+                        <line
+                            x1={fromX}
+                            y1={cy}
+                            x2={fromX}
+                            y2={yNext}
+                            stroke={stroke}
+                            stroke-width={EDGE_STROKE}
+                        />
+                    ) : (
+                        <path
+                            d={d}
+                            fill="none"
+                            stroke={stroke}
+                            stroke-width={EDGE_STROKE}
+                        />
+                    );
+                })
+            )
+        }
+
+        {
+            rows.map((row, index) => {
+                const { cx, cy, stroke } = nodeGeometry(row, index);
+                if (row.kind === "merge") {
+                    const outer = MERGE_RADIUS;
+                    const core = outer - NODE_CORE_INSET;
+                    return (
+                        <g>
+                            <rect
+                                x={cx - outer}
+                                y={cy - outer}
+                                width={outer * 2}
+                                height={outer * 2}
+                                rx={outer * SQUIRCLE_CORNER}
+                                fill="var(--background)"
+                                stroke={stroke}
+                                stroke-width={EDGE_STROKE}
+                            />
+                            <rect
+                                x={cx - core}
+                                y={cy - core}
+                                width={core * 2}
+                                height={core * 2}
+                                rx={(outer * SQUIRCLE_CORNER * core) / outer}
+                                fill={stroke}
+                            />
+                        </g>
+                    );
+                }
+                return (
+                    <g>
+                        <circle
+                            cx={cx}
+                            cy={cy}
+                            r={NODE_RADIUS}
+                            fill="var(--background)"
+                            stroke={stroke}
+                            stroke-width={EDGE_STROKE}
+                        />
+                        <circle
+                            cx={cx}
+                            cy={cy}
+                            r={NODE_RADIUS - NODE_CORE_INSET}
+                            fill={stroke}
+                        />
+                    </g>
+                );
+            })
+        }
+    </svg>
+
+    <table class="w-full table-fixed border-collapse text-sm">
+        <colgroup>
+            <col style={`width: ${railWidth}px`} />
+            <col />
+            <col class="max-sm:hidden" style="width: 9rem" />
+            <col class="max-sm:hidden" style="width: 6rem" />
+            <col class="max-sm:hidden" style="width: 5rem" />
+            <col style="width: 4.5rem" />
+        </colgroup>
+        <tbody>
+            {
+                rows.map((row) => {
+                    const refs = collapseRefs(row.refs);
+                    return (
+                        <tr
+                            class="hover:bg-accent/40 data-selected:bg-accent/64"
+                            style={`height: ${GRAPH_ROW_HEIGHT_PX}px`}
+                            data-slot="graph-row"
+                        >
+                            <td class="p-0" />
+                            <td class="truncate pr-2">{row.summary}</td>
+                            <td class="truncate px-2 max-sm:hidden">
+                                {refs.length > 0 && (
+                                    <span class="flex min-w-0 items-center gap-1">
+                                        {refs.map((name) => (
+                                            <Badge
+                                                class="min-w-0 shrink"
+                                                style={`background: ${laneAlpha(row.lane, 12)}; color: ${laneVar(row.lane)}`}
+                                            >
+                                                <span class="min-w-0 truncate">
+                                                    {name}
+                                                </span>
+                                            </Badge>
+                                        ))}
+                                    </span>
+                                )}
+                            </td>
+                            <td class="truncate px-2 text-muted-foreground max-sm:hidden">
+                                {row.author}
+                            </td>
+                            <td class="truncate px-2 text-muted-foreground max-sm:hidden">
+                                {row.date}
+                            </td>
+                            <td class="truncate px-2 font-mono text-muted-foreground">
+                                {shortId(row.id)}
+                            </td>
+                        </tr>
+                    );
+                })
+            }
+        </tbody>
+    </table>
+</div>

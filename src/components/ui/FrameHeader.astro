@@ -1,0 +1,13 @@
+---
+import { cn } from "../../lib/cn";
+
+interface Props {
+    class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<header class={cn("flex flex-col px-5 py-4", className)} data-slot="frame-panel-header">
+    <slot />
+</header>

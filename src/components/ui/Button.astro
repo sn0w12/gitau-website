@@ -1,0 +1,64 @@
+---
+import { cn } from "../../lib/cn";
+import { buttonVariants } from "./button-variants";
+import type { ButtonSize, ButtonVariant } from "./button-variants";
+
+interface Props {
+    variant?: ButtonVariant;
+    size?: ButtonSize;
+    href?: string;
+    external?: boolean;
+    type?: "button" | "submit" | "reset";
+    disabled?: boolean;
+    class?: string;
+    id?: string;
+    "aria-label"?: string;
+    "aria-current"?: "page" | undefined;
+}
+
+const {
+    variant = "default",
+    size = "default",
+    href,
+    external = false,
+    type = "button",
+    disabled,
+    class: className,
+    id,
+    "aria-label": ariaLabel,
+    "aria-current": ariaCurrent,
+} = Astro.props;
+
+/* The app's Button wraps its children in a div so the loading spinner can
+ * hide them. The site has no loading state, so the children stay direct
+ * children of the button and the base classes' gap-2 applies to them. */
+const classes = cn(buttonVariants({ variant, size }), className);
+---
+
+{
+    href ? (
+        <a
+            href={href}
+            class={classes}
+            id={id}
+            aria-label={ariaLabel}
+            aria-current={ariaCurrent}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noreferrer noopener" : undefined}
+            data-slot="button"
+        >
+            <slot />
+        </a>
+    ) : (
+        <button
+            type={type}
+            class={classes}
+            id={id}
+            aria-label={ariaLabel}
+            disabled={disabled}
+            data-slot="button"
+        >
+            <slot />
+        </button>
+    )
+}

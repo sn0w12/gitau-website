@@ -1,0 +1,23 @@
+---
+import { cn } from "../../lib/cn";
+
+interface Props {
+    src?: string;
+    alt?: string;
+    class?: string;
+}
+
+const { src, alt, class: className } = Astro.props;
+---
+
+{
+    src ? (
+        <img
+            src={src}
+            alt={alt ?? ""}
+            draggable="false"
+            class={cn("size-full object-cover", className)}
+            data-slot="avatar-image"
+        />
+    ) : null
+}

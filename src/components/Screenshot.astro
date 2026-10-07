@@ -1,0 +1,245 @@
+---
+import { cn } from "../lib/cn";
+import raw from "../../.generated/blurhash.json";
+import Blurhash from "./Blurhash.astro";
+
+const blurhashes = raw as Record<string, string>;
+
+interface Props {
+    light: string;
+    dark: string;
+    alt: string;
+    width: number;
+    height: number;
+    class?: string;
+}
+
+const { light, dark, alt, width, height, class: className } = Astro.props;
+
+const imageClass = cn(
+    "w-full rounded-md border border-border shadow-2xl",
+    className
+);
+---
+
+<div class="relative">
+    <div data-reveal class="relative">
+        {blurhashes[light] && (
+            <div class="absolute inset-0 overflow-hidden rounded-md">
+                <Blurhash hash={blurhashes[light]} class="dark:hidden" />
+            </div>
+        )}
+        {blurhashes[dark] && (
+            <div class="absolute inset-0 overflow-hidden rounded-md">
+                <Blurhash hash={blurhashes[dark]} class="hidden dark:block" />
+            </div>
+        )}
+        <div
+            class="pointer-events-none absolute inset-x-8 top-8 bottom-0 rounded-[2rem] bg-foreground/5 blur-2xl"
+            aria-hidden="true"
+        >
+        </div>
+        <button
+            type="button"
+            data-shot-trigger
+            class="group relative block w-full cursor-zoom-in overflow-hidden rounded-md"
+            aria-haspopup="dialog"
+        >
+            <img
+                src={light}
+                width={width}
+                height={height}
+                alt={alt}
+                class={cn(imageClass, "dark:hidden")}
+                loading="lazy"
+                decoding="async"
+            />
+            <img
+                src={dark}
+                width={width}
+                height={height}
+                alt=""
+                aria-hidden="true"
+                class={cn(imageClass, "hidden dark:block")}
+                loading="lazy"
+                decoding="async"
+            />
+        </button>
+    </div>
+</div>
+
+<dialog
+    data-shot-dialog
+    aria-label={alt}
+    class="m-auto max-h-svh w-[96vw] overflow-hidden bg-transparent p-0 backdrop:bg-background/80 backdrop:backdrop-blur-sm"
+>
+    <div
+        class="relative flex max-h-svh items-center justify-center overflow-hidden p-4 sm:p-8"
+    >
+        <img
+            src={light}
+            width={width}
+            height={height}
+            alt={alt}
+            class={cn(
+                imageClass,
+                "max-h-[calc(100svh-4rem)] w-auto shadow-none dark:hidden"
+            )}
+            decoding="async"
+        />
+        <img
+            src={dark}
+            width={width}
+            height={height}
+            alt=""
+            aria-hidden="true"
+            class={cn(
+                imageClass,
+                "hidden max-h-[calc(100svh-4rem)] w-auto shadow-none dark:block"
+            )}
+            decoding="async"
+        />
+    </div>
+</dialog>
+
+<style is:global>
+    /* Global because these pseudo-elements live on the document root, so an
+     * Astro scope attribute on them would match nothing. Only the screenshot
+     * morphs, so the page behind it does not cross-fade out from under the
+     * dialog. */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+    }
+
+    /* Only the duration and the curve are overridden. Replacing `animation`
+     * outright would throw away the browser's own transform-and-size morph and
+     * leave a plain cross-fade. */
+    ::view-transition-group(shot),
+    ::view-transition-image-pair(shot),
+    ::view-transition-old(shot),
+    ::view-transition-new(shot) {
+        animation-duration: 220ms;
+        animation-timing-function: var(--ease-snappy);
+    }
+
+    /* The page is replaced by a static snapshot while the screenshot moves, so
+     * the header's blur would sample that frozen frame and double the picture
+     * passing under it. Opaque for the length of the morph. */
+    html[data-shot-transition] [data-site-header] {
+        backdrop-filter: none;
+        background-color: var(--background);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        ::view-transition-group(shot),
+        ::view-transition-image-pair(shot),
+        ::view-transition-old(shot),
+        ::view-transition-new(shot) {
+            animation-duration: 0s;
+        }
+    }
+</style>
+
+<script>
+    /* `view-transition-name` is unique per element, so the name has to move
+     * between the thumbnail and the expanded copy inside the callback. */
+    const NAME = "shot";
+
+    function visibleImage(scope: Element): HTMLImageElement | null {
+        const images = scope.querySelectorAll<HTMLImageElement>("img");
+        return (
+            [...images].find(
+                (image) => getComputedStyle(image).display !== "none"
+            ) ?? null
+        );
+    }
+
+    function nameOn(image: HTMLImageElement | null): void {
+        clearName();
+        if (image) image.style.viewTransitionName = NAME;
+    }
+
+    function prefersReducedMotion(): boolean {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function clearName(): void {
+        for (const element of document.querySelectorAll<HTMLElement>(
+            `[style*="view-transition-name"]`
+        )) {
+            if (element.style.viewTransitionName === NAME) {
+                element.style.viewTransitionName = "";
+            }
+        }
+    }
+
+    /* The name stays on whichever element is showing, because the next
+     * transition needs it there to have an `old` frame to animate from. */
+    function transition(update: () => void, after?: () => void): void {
+        const done = (): void => {
+            document.documentElement.removeAttribute("data-shot-transition");
+            after?.();
+        };
+
+        if (prefersReducedMotion() || !document.startViewTransition) {
+            update();
+            done();
+            return;
+        }
+
+        document.documentElement.setAttribute("data-shot-transition", "");
+        document.startViewTransition(update).finished.finally(done);
+    }
+
+    for (const trigger of document.querySelectorAll("[data-shot-trigger]")) {
+        const dialog = document.querySelector<HTMLDialogElement>(
+            "[data-shot-dialog]"
+        );
+        if (!dialog) continue;
+
+        trigger.addEventListener("click", () => {
+            const thumbnail = visibleImage(trigger);
+            if (thumbnail) thumbnail.style.viewTransitionName = NAME;
+
+            transition(() => {
+                dialog.showModal();
+                if (thumbnail) thumbnail.style.viewTransitionName = "";
+                nameOn(visibleImage(dialog));
+            });
+        });
+
+        const close = (): void => {
+            const expanded = visibleImage(dialog);
+
+            /* Scrolled first, so the old frame is captured with the thumbnail
+             * already in view rather than morphing toward an off-screen or
+             * header-hidden position. `scroll-padding-top` in global.css keeps
+             * it clear of the sticky bar. */
+            trigger.scrollIntoView({ block: "center", behavior: "instant" });
+
+            transition(
+                () => {
+                    const back = visibleImage(trigger);
+                    dialog.close();
+                    if (expanded) expanded.style.viewTransitionName = "";
+                    nameOn(back);
+                },
+                clearName
+            );
+        };
+
+        /* The image is the only thing inside the dialog, so any click that misses it
+         * landed on the dialog or the padding around the picture. */
+        dialog.addEventListener("click", (event) => {
+            const target = event.target as Element | null;
+            if (target && !target.closest("img")) close();
+        });
+
+        dialog.addEventListener("cancel", (event) => {
+            event.preventDefault();
+            close();
+        });
+    }
+</script>

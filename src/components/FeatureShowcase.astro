@@ -1,0 +1,401 @@
+---
+import { getShowcaseRepositories } from "../lib/github";
+import GithubPanel from "./github/GithubPanel.astro";
+import InboxRow from "./github/InboxRow.astro";
+import IssueRow from "./github/IssueRow.astro";
+import PullRow from "./github/PullRow.astro";
+import ChangesPanel from "./repo/ChangesPanel.astro";
+import CommitGraph from "./repo/CommitGraph.astro";
+import RepoCard from "./repo/RepoCard.astro";
+import ShowcaseItem from "./ShowcaseItem.astro";
+import Button from "./ui/Button.astro";
+import Frame from "./ui/Frame.astro";
+import FramePanel from "./ui/FramePanel.astro";
+
+interface Commit {
+    id: string;
+    lane: number;
+    kind: "commit" | "merge";
+    summary: string;
+    refs: string[];
+    author: string;
+    date: string;
+    edges: { fromLane: number; toLane: number }[];
+}
+
+interface Label {
+    name: string;
+    color: string;
+}
+
+interface Thread {
+    title: string;
+    number: number;
+    author: string;
+    date: string;
+    labels: Label[];
+    status: ThreadStatus;
+}
+
+type ThreadStatus =
+    | "closed"
+    | "completed"
+    | "duplicate"
+    | "draft"
+    | "merged"
+    | "notPlanned"
+    | "open";
+
+interface Notification {
+    type:
+        | "CheckSuite"
+        | "Commit"
+        | "Discussion"
+        | "Issue"
+        | "PullRequest"
+        | "Release";
+    title: string;
+    meta: string;
+    unread?: boolean;
+}
+
+const repositories = await getShowcaseRepositories();
+
+const commits: Commit[] = [
+    {
+        id: "6f1c40b8d5a2",
+        lane: 2,
+        kind: "commit",
+        summary: "Stream diff hunks over the IPC channel",
+        refs: ["helix/streaming-diffs"],
+        author: "helix",
+        date: "20 minutes ago",
+        edges: [{ fromLane: 2, toLane: 1 }],
+    },
+    {
+        id: "4f2a1c93b7d1",
+        lane: 1,
+        kind: "commit",
+        summary: "Add stash restore action to the changes panel",
+        refs: [],
+        author: "helix",
+        date: "2 hours ago",
+        edges: [{ fromLane: 1, toLane: 1 }],
+    },
+    {
+        id: "8b3d0e145f2c",
+        lane: 1,
+        kind: "commit",
+        summary: "Cache diff hunks per file",
+        refs: [],
+        author: "helix",
+        date: "5 hours ago",
+        edges: [{ fromLane: 1, toLane: 3 }],
+    },
+    {
+        id: "c91f7a2e0d38",
+        lane: 3,
+        kind: "merge",
+        summary: "Merge pull request #214 from helix/partial-clones",
+        refs: ["master"],
+        author: "nora",
+        date: "1 day ago",
+        edges: [{ fromLane: 3, toLane: 2 }],
+    },
+    {
+        id: "2d4e8b06a1f7",
+        lane: 2,
+        kind: "commit",
+        summary: "Reuse the existing session for partial clones",
+        refs: ["helix/partial-clones"],
+        author: "helix",
+        date: "1 day ago",
+        edges: [{ fromLane: 2, toLane: 2 }],
+    },
+    {
+        id: "6a9c3f52b8e4",
+        lane: 2,
+        kind: "commit",
+        summary: "Bump gitoxide to 0.87",
+        refs: [],
+        author: "nora",
+        date: "2 days ago",
+        edges: [{ fromLane: 2, toLane: 1 }],
+    },
+    {
+        id: "9e0b7d41c6a3",
+        lane: 1,
+        kind: "commit",
+        summary: "Fix diff scroll on large files",
+        refs: [],
+        author: "nora",
+        date: "3 days ago",
+        edges: [{ fromLane: 1, toLane: 1 }],
+    },
+    {
+        id: "a7c2f90b3e15",
+        lane: 1,
+        kind: "commit",
+        summary: "Ship the changes panel rewrite",
+        refs: [],
+        author: "helix",
+        date: "4 days ago",
+        edges: [{ fromLane: 1, toLane: 1 }],
+    },
+    {
+        id: "1c5a2f8d4e60",
+        lane: 1,
+        kind: "commit",
+        summary: "Release 0.2.0",
+        refs: ["v0.2.0", "origin/v0.2.0"],
+        author: "helix",
+        date: "5 days ago",
+        edges: [{ fromLane: 1, toLane: 1 }],
+    },
+    {
+        id: "3f8e1b6c2a94",
+        lane: 1,
+        kind: "commit",
+        summary: "Add keyboard shortcuts help",
+        refs: [],
+        author: "nora",
+        date: "6 days ago",
+        edges: [{ fromLane: 1, toLane: 1 }],
+    },
+    {
+        id: "5b0d7a3f9c21",
+        lane: 1,
+        kind: "commit",
+        summary: "Start 0.2.0 development",
+        refs: [],
+        author: "helix",
+        date: "1 week ago",
+        edges: [],
+    },
+];
+
+const pulls: Thread[] = [
+    {
+        title: "Support partial clones",
+        number: 214,
+        author: "helix",
+        date: "2 hours ago",
+        labels: [{ name: "enhancement", color: "a2eeef" }],
+        status: "open",
+    },
+    {
+        title: "Show the worktree in the title bar",
+        number: 208,
+        author: "nora",
+        date: "1 day ago",
+        labels: [{ name: "ui", color: "d4c5f9" }],
+        status: "merged",
+    },
+    {
+        title: "Remember the last opened repository",
+        number: 196,
+        author: "helix",
+        date: "4 days ago",
+        labels: [],
+        status: "merged",
+    },
+    {
+        title: "Add a diff viewer for images",
+        number: 187,
+        author: "nora",
+        date: "1 week ago",
+        labels: [{ name: "ui", color: "d4c5f9" }],
+        status: "closed",
+    },
+];
+
+const issues: Thread[] = [
+    {
+        title: "Crash on an empty repository",
+        number: 231,
+        author: "nora",
+        date: "30 minutes ago",
+        labels: [{ name: "bug", color: "d73a4a" }],
+        status: "open",
+    },
+    {
+        title: "Diff hangs on a 40 MB file",
+        number: 229,
+        author: "helix",
+        date: "2 days ago",
+        labels: [{ name: "performance", color: "fbca04" }],
+        status: "open",
+    },
+    {
+        title: "Search does not match renamed files",
+        number: 218,
+        author: "helix",
+        date: "5 days ago",
+        labels: [{ name: "bug", color: "d73a4a" }],
+        status: "open",
+    },
+    {
+        title: "Release notes missing from the update dialog",
+        number: 203,
+        author: "nora",
+        date: "2 weeks ago",
+        labels: [{ name: "docs", color: "0075ca" }],
+        status: "completed",
+    },
+];
+
+const notifications: Notification[] = [
+    {
+        type: "PullRequest",
+        title: "Review requested on Support partial clones",
+        meta: "Pull request · 10 minutes ago",
+        unread: true,
+    },
+    {
+        type: "CheckSuite",
+        title: "Checks passed on helix/partial-clones",
+        meta: "Check suite · 1 hour ago",
+    },
+    {
+        type: "Issue",
+        title: "Mentioned in Crash on an empty repository",
+        meta: "Issue · 4 hours ago",
+        unread: true,
+    },
+    {
+        type: "Commit",
+        title: "New commit on master",
+        meta: "Commit · yesterday",
+    },
+];
+
+---
+
+<section id="features" class="pb-8 sm:pb-12">
+    <div class="shell">
+        <div
+            data-reveal
+            class="mx-auto flex max-w-2xl flex-col items-center text-center"
+        >
+            <h2
+                class="font-display text-4xl tracking-tight text-balance sm:text-5xl"
+            >
+                A look around
+            </h2>
+        </div>
+
+        <div class="mt-3 border-t border-border/70 border-dashed"></div>
+
+        <div data-reveal-grid class="mt-8 grid gap-10 lg:grid-cols-3 lg:gap-6">
+            <ShowcaseItem
+                class="lg:col-span-2"
+                title="Commit graph"
+                description="Read history as a graph: branches, tags, and merges beside the commits that moved them."
+            >
+                <Frame class="flex-1">
+                    <FramePanel class="flex-1 p-2">
+                        <CommitGraph rows={commits} />
+                    </FramePanel>
+                </Frame>
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                title="Changes and commits"
+                description="Stage files one at a time or all at once, then commit without leaving the list."
+            >
+                <ChangesPanel
+                    branch="master"
+                    filter=""
+                    staged={[
+                        {
+                            kind: "modified",
+                            path: "src/lib/diff.ts",
+                            checked: true,
+                        },
+                    ]}
+                    unstaged={[
+                        {
+                            kind: "added",
+                            path: "src/components/stash-menu.tsx",
+                        },
+                        {
+                            kind: "deleted",
+                            path: "src/routes/legacy-page.tsx",
+                        },
+                        { kind: "modified", path: "src/lib/graph.ts" },
+                    ]}
+                />
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                title="Pull requests"
+                description="Review threads, checks, and labels in the app. Comment on a line without a browser."
+            >
+                <GithubPanel
+                    title="Pull Requests"
+                    description="GitHub pull requests involving you, sorted by most recently updated."
+                    refreshLabel="Refresh pull requests"
+                    rows={pulls}
+                    Row={PullRow}
+                />
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                title="Issues"
+                description="Filter by label, follow a thread through its comments, and render Markdown and Mermaid."
+            >
+                <GithubPanel
+                    title="Issues"
+                    description="GitHub issues involving you, sorted by most recently updated."
+                    refreshLabel="Refresh issues"
+                    rows={issues}
+                    Row={IssueRow}
+                />
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                title="GitHub inbox"
+                description="Notifications newest first, opened in the app or handed to the browser."
+            >
+                <GithubPanel
+                    title="Inbox"
+                    description="GitHub notifications for the connected account."
+                    refreshLabel="Refresh inbox"
+                    rows={notifications}
+                    Row={InboxRow}
+                >
+                    <Button
+                        slot="actions"
+                        variant="outline"
+                        size="sm"
+                        disabled
+                    >
+                        Mark all read
+                    </Button>
+                </GithubPanel>
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                full
+                title="Your repositories"
+                description="Pinned repositories with stars, forks, and the language mix read from the GitHub API when the site builds."
+            >
+                <div class="grid h-full gap-1 sm:grid-cols-2 xl:grid-cols-4">
+                    {
+                        repositories.map((repository) => (
+                            <RepoCard
+                                repo={repository.repo}
+                                description={repository.description}
+                                stars={repository.stars}
+                                forks={repository.forks}
+                                languages={repository.languages}
+                                avatarSrc={repository.avatarUrl}
+                                avatarInitial={repository.repo.slice(0, 1)}
+                            />
+                        ))
+                    }
+                </div>
+            </ShowcaseItem>
+        </div>
+    </div>
+</section>

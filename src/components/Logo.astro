@@ -1,0 +1,23 @@
+---
+import { cn } from "../lib/cn";
+
+interface Props {
+    class?: string;
+    markClass?: string;
+    showWord?: boolean;
+}
+
+const { class: className, markClass, showWord = true } = Astro.props;
+---
+
+<span class={cn("inline-flex items-center gap-2.5", className)}>
+    <img
+        src="/icon-192.png"
+        alt=""
+        width="192"
+        height="192"
+        class={cn("size-6 shrink-0 rounded-md ring-1 ring-border", markClass)}
+        aria-hidden="true"
+    />
+    {showWord && <span class="font-display text-2xl leading-none">gitau</span>}
+</span>
