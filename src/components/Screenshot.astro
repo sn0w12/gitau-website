@@ -103,16 +103,6 @@ const imageClass = cn(
 </dialog>
 
 <style is:global>
-    /* Global because these pseudo-elements live on the document root, so an
-     * Astro scope attribute on them would match nothing. Only the screenshot
-     * morphs, so the page behind it does not cross-fade out from under the
-     * dialog. */
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-        animation: none;
-        mix-blend-mode: normal;
-    }
-
     /* Only the duration and the curve are overridden. Replacing `animation`
      * outright would throw away the browser's own transform-and-size morph and
      * leave a plain cross-fade. */

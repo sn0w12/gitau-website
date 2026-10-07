@@ -494,3 +494,18 @@ textarea {
         color: var(--symbol-color);
     }
 }
+
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: var(--ease-snappy);
+
+    @media (prefers-reduced-motion: reduce) {
+        animation-duration: none;
+        animation-timing-function: none;
+    }
+}
