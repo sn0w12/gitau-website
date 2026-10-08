@@ -429,7 +429,7 @@ textarea {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    html[data-reveal-ready] [data-reveal] {
+    html[data-reveal-ready] [data-reveal]:not([data-reveal="false"]) {
         opacity: 0;
         filter: blur(6px);
         transform: translateY(18px);
@@ -439,27 +439,12 @@ textarea {
             transform 480ms var(--ease-snappy);
     }
 
-    html[data-reveal-ready] [data-reveal][data-revealed] {
+    html[data-reveal-ready]
+        [data-reveal]:not([data-reveal="false"])[data-revealed] {
         opacity: 1;
         filter: blur(0);
         transform: none;
         transition-delay: var(--reveal-delay, 0ms);
-    }
-
-    [data-reveal-grid] > :nth-child(2) {
-        --reveal-delay: 70ms;
-    }
-
-    [data-reveal-grid] > :nth-child(3) {
-        --reveal-delay: 140ms;
-    }
-
-    [data-reveal-grid] > :nth-child(4) {
-        --reveal-delay: 210ms;
-    }
-
-    [data-reveal-grid] > :nth-child(n + 5) {
-        --reveal-delay: 280ms;
     }
 }
 

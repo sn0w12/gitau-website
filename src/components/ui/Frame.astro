@@ -3,9 +3,11 @@ import { cn } from "../../lib/cn";
 
 interface Props {
     class?: string;
+    style?: string;
+    [key: string]: any;
 }
 
-const { class: className } = Astro.props;
+const { class: className, style, ...rest } = Astro.props;
 
 const classes = cn(
     "relative flex flex-col rounded-2xl bg-muted/72 p-1",
@@ -14,6 +16,6 @@ const classes = cn(
 );
 ---
 
-<div class={classes} data-slot="frame">
+<div class={classes} data-slot="frame" style={style} {...rest}>
     <slot />
 </div>

@@ -5,21 +5,22 @@ interface Props {
     title: string;
     description: string;
     full?: boolean;
+    reveal?: boolean;
     class?: string;
 }
 
-const { title, description, full = false, class: className } = Astro.props;
+const { title, description, full = false, reveal = true, class: className } = Astro.props;
 ---
 
 <article
-    data-reveal
+    data-reveal={reveal}
     class={cn(
         "grid h-full grid-rows-[auto_1fr] gap-2",
         full && "lg:col-span-3",
         className
     )}
 >
-    <div class="flex flex-col">
+    <div data-reveal={!reveal} class="flex flex-col">
         <h3 class="font-display text-2xl">{title}</h3>
         <p class="mt-1 max-w-lg text-sm text-muted-foreground text-pretty">
             {description}

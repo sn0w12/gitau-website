@@ -377,22 +377,23 @@ const notifications: Notification[] = [
 
             <ShowcaseItem
                 full
+                reveal={false}
                 title="Your repositories"
                 description="Pinned repositories with stars, forks, and the language mix read from the GitHub API when the site builds."
             >
-                <div class="grid h-full gap-1 sm:grid-cols-2 xl:grid-cols-4">
+                <div data-reveal-grid class="grid h-full gap-1 sm:grid-cols-2 xl:grid-cols-4">
                     {
                         repositories.map((repository) => (
-                            <RepoCard
-                                repo={repository.repo}
-                                description={repository.description}
-                                stars={repository.stars}
-                                forks={repository.forks}
-                                languages={repository.languages}
-                                avatarSrc={repository.avatarUrl}
-                                avatarInitial={repository.repo.slice(0, 1)}
-                            />
-                        ))
+                                <RepoCard
+                                    repo={repository.repo}
+                                    description={repository.description}
+                                    stars={repository.stars}
+                                    forks={repository.forks}
+                                    languages={repository.languages}
+                                    avatarSrc={repository.avatarUrl}
+                                    avatarInitial={repository.repo.slice(0, 1)}
+                                />
+                               ))
                     }
                 </div>
             </ShowcaseItem>
