@@ -164,7 +164,7 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
                 target.setAttribute("data-revealed", "");
             };
 
-            const revealWhenLoaded = (target: HTMLElement): void => {
+            const revealWhenVisible = (target: HTMLElement): void => {
                 const images = [
                     ...(target instanceof HTMLImageElement
                         ? [target]
@@ -173,28 +173,7 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
                     (image) => getComputedStyle(image).display !== "none"
                 );
 
-                let pending = images.filter(
-                    (image) => !image.complete
-                ).length;
-
-                if (pending === 0) {
-                    reveal(target);
-                    return;
-                }
-
-                for (const image of images) {
-                    if (image.complete) continue;
-
-                    for (const event of ["load", "error"]) {
-                        image.addEventListener(
-                            event,
-                            () => {
-                                if (--pending === 0) reveal(target);
-                            },
-                            { once: true }
-                        );
-                    }
-                }
+                reveal(target);
             };
 
             const observer = new IntersectionObserver(
@@ -202,7 +181,7 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
                     for (const entry of entries) {
                         if (!entry.isIntersecting) continue;
 
-                        revealWhenLoaded(entry.target as HTMLElement);
+                        revealWhenVisible(entry.target as HTMLElement);
                         observer.unobserve(entry.target);
                     }
                 },
@@ -214,7 +193,7 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
 
             for (const target of targets) {
                 if (target.getBoundingClientRect().top < 0) {
-                    revealWhenLoaded(target);
+                    revealWhenVisible(target);
                     continue;
                 }
 
