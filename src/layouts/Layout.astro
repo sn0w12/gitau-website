@@ -26,7 +26,7 @@ const origin = Astro.site;
 const pageTitle = title === SITE_NAME ? title : `${title} · ${SITE_NAME}`;
 const canonical = origin ? new URL(Astro.url.pathname, origin).href : null;
 
-const OG_IMAGE = "/repo-page-dark.webp";
+const OG_IMAGE = "/screenshots/repo-dark.png";
 const OG_WIDTH = 1402;
 const OG_HEIGHT = 920;
 const ogImage = origin ? new URL(OG_IMAGE, origin).href : OG_IMAGE;
@@ -83,15 +83,15 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
                     <link
                         rel="preload"
                         as="image"
-                        href="/repo-page-light.webp"
-                        type="image/webp"
+                        href="/screenshots/repo-light.png"
+                        type="image/png"
                         media="(prefers-color-scheme: light)"
                     />
                     <link
                         rel="preload"
                         as="image"
-                        href="/repo-page-dark.webp"
-                        type="image/webp"
+                        href="/screenshots/repo-dark.png"
+                        type="image/png"
                         media="(prefers-color-scheme: dark)"
                     />
                 </>
