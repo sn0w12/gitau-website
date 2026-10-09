@@ -34,7 +34,7 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-preload-hero={preloadHero ? "" : undefined}>
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -74,27 +74,6 @@ const fontPreloads = [inter, instrumentSerif, geistMono];
                     type="font/woff2"
                     crossorigin
                 />
-            )
-        }
-
-        {
-            preloadHero && (
-                <>
-                    <link
-                        rel="preload"
-                        as="image"
-                        href="/screenshots/repo-light.png"
-                        type="image/png"
-                        media="(prefers-color-scheme: light)"
-                    />
-                    <link
-                        rel="preload"
-                        as="image"
-                        href="/screenshots/repo-dark.png"
-                        type="image/png"
-                        media="(prefers-color-scheme: dark)"
-                    />
-                </>
             )
         }
 

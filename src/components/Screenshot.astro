@@ -46,24 +46,26 @@ const imageClass = cn(
             aria-haspopup="dialog"
         >
             <img
-                src={light}
+                data-shot-image
+                data-light={light}
+                data-dark={dark}
                 width={width}
                 height={height}
                 alt={alt}
-                class={cn(imageClass, "dark:hidden")}
+                class={imageClass}
                 loading="lazy"
                 decoding="async"
             />
-            <img
-                src={dark}
-                width={width}
-                height={height}
-                alt=""
-                aria-hidden="true"
-                class={cn(imageClass, "hidden dark:block")}
-                loading="lazy"
-                decoding="async"
-            />
+            <noscript>
+                <img
+                    src={light}
+                    width={width}
+                    height={height}
+                    alt={alt}
+                    class={imageClass}
+                    decoding="async"
+                />
+            </noscript>
         </button>
     </div>
 </div>
@@ -77,25 +79,15 @@ const imageClass = cn(
         class="relative flex max-h-svh items-center justify-center overflow-hidden p-4 sm:p-8"
     >
         <img
-            src={light}
+            data-shot-image
+            data-light={light}
+            data-dark={dark}
             width={width}
             height={height}
             alt={alt}
             class={cn(
                 imageClass,
-                "max-h-[calc(100svh-4rem)] w-auto shadow-none dark:hidden"
-            )}
-            decoding="async"
-        />
-        <img
-            src={dark}
-            width={width}
-            height={height}
-            alt=""
-            aria-hidden="true"
-            class={cn(
-                imageClass,
-                "hidden max-h-[calc(100svh-4rem)] w-auto shadow-none dark:block"
+                "max-h-[calc(100svh-4rem)] w-auto shadow-none"
             )}
             decoding="async"
         />
@@ -133,17 +125,36 @@ const imageClass = cn(
 </style>
 
 <script>
+    /* A light and a dark image in the DOM both get fetched, even when one is
+     * `display: none`, so the theme picks the single `src` instead. The head
+     * script has already resolved the theme into the `dark` class by the time
+     * this runs. `applyTheme` also runs on every class change, so the toggle
+     * swaps the picture without a reload. */
+    function applyTheme(): void {
+        const dark = document.documentElement.classList.contains("dark");
+
+        for (const image of document.querySelectorAll<HTMLImageElement>(
+            "[data-shot-image]"
+        )) {
+            const src = dark ? image.dataset.dark : image.dataset.light;
+            if (src && image.getAttribute("src") !== src) {
+                image.setAttribute("src", src);
+            }
+        }
+    }
+
+    applyTheme();
+    new MutationObserver(applyTheme).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+    });
+
     /* `view-transition-name` is unique per element, so the name has to move
      * between the thumbnail and the expanded copy inside the callback. */
     const NAME = "shot";
 
     function visibleImage(scope: Element): HTMLImageElement | null {
-        const images = scope.querySelectorAll<HTMLImageElement>("img");
-        return (
-            [...images].find(
-                (image) => getComputedStyle(image).display !== "none"
-            ) ?? null
-        );
+        return scope.querySelector<HTMLImageElement>("img");
     }
 
     function nameOn(image: HTMLImageElement | null): void {
