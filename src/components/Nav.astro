@@ -1,5 +1,5 @@
 ---
-import { Download, ExternalLink, Menu } from "lucide-astro";
+import { Download, ExternalLink, Menu, X } from "lucide-astro";
 
 import { cn } from "../lib/cn";
 import { REPO_URL } from "../lib/site";
@@ -65,17 +65,29 @@ const linkClass =
             <button
                 id="nav-toggle"
                 type="button"
+                data-open="false"
                 class="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring md:hidden"
                 aria-label="Open menu"
                 aria-expanded="false"
                 aria-controls="nav-menu"
             >
-                <Menu class="size-5" />
+                <span class="grid size-5 place-items-center">
+                    <span data-nav-icon="menu" class="col-start-1 row-start-1">
+                        <Menu class="size-5" />
+                    </span>
+                    <span data-nav-icon="close" class="col-start-1 row-start-1">
+                        <X class="size-5" />
+                    </span>
+                </span>
             </button>
         </div>
     </div>
 
-    <div id="nav-menu" class="fixed top-16 hidden border-t border-border/70 bg-background md:hidden w-full">
+    <div
+        id="nav-menu"
+        data-open="false"
+        class="fixed top-16 w-full border-t border-border/70 bg-background md:hidden"
+    >
         <nav class="shell flex flex-col py-3" aria-label="Mobile">
             {
                 links.map((link) => (
@@ -93,21 +105,103 @@ const linkClass =
     </div>
 </header>
 
+<style>
+    /* The panel drops out of the header, so it enters from just above and fades.
+     * `visibility` hides it rather than `display`, which keeps the menu out of
+     * the tab order and the accessibility tree while still letting both the
+     * enter and the exit transition. Tailwind's `md:hidden` still removes it on
+     * desktop, where the inline nav takes over. */
+    #nav-menu {
+        --menu-shift: -0.5rem;
+
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(var(--menu-shift));
+        transition:
+            opacity 200ms var(--ease-snappy),
+            transform 200ms var(--ease-snappy),
+            visibility 0s linear 200ms;
+    }
+
+    #nav-menu[data-open="true"] {
+        visibility: visible;
+        opacity: 1;
+        transform: none;
+        transition:
+            opacity 200ms var(--ease-snappy),
+            transform 200ms var(--ease-snappy),
+            visibility 0s;
+    }
+
+    /* The toggle morphs between the menu and close glyphs instead of swapping
+     * hard, so the button reports the state it just changed. */
+    #nav-toggle [data-nav-icon] {
+        transition:
+            opacity 160ms var(--ease-snappy),
+            transform 160ms var(--ease-snappy);
+    }
+
+    #nav-toggle [data-nav-icon="close"] {
+        opacity: 0;
+        transform: rotate(-45deg) scale(0.8);
+    }
+
+    #nav-toggle[data-open="true"] [data-nav-icon="menu"] {
+        opacity: 0;
+        transform: rotate(45deg) scale(0.8);
+    }
+
+    #nav-toggle[data-open="true"] [data-nav-icon="close"] {
+        opacity: 1;
+        transform: none;
+    }
+
+    /* Reduced motion keeps the cross-fade that marks the state change and drops
+     * the movement. */
+    @media (prefers-reduced-motion: reduce) {
+        #nav-menu {
+            --menu-shift: 0rem;
+            transition:
+                opacity 150ms ease,
+                visibility 0s linear 150ms;
+        }
+
+        #nav-menu[data-open="true"] {
+            transition:
+                opacity 150ms ease,
+                visibility 0s;
+        }
+
+        #nav-toggle [data-nav-icon] {
+            transition: opacity 150ms ease;
+        }
+
+        #nav-toggle [data-nav-icon="close"],
+        #nav-toggle[data-open="true"] [data-nav-icon="menu"] {
+            transform: none;
+        }
+    }
+</style>
+
 <script>
     const toggle = document.getElementById("nav-toggle");
     const menu = document.getElementById("nav-menu");
 
     if (toggle && menu) {
+        const setOpen = (open: boolean): void => {
+            const value = open ? "true" : "false";
+            menu.dataset.open = value;
+            toggle.dataset.open = value;
+            toggle.setAttribute("aria-expanded", value);
+            toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        };
+
         toggle.addEventListener("click", () => {
-            const hidden = menu.classList.toggle("hidden");
-            toggle.setAttribute("aria-expanded", hidden ? "false" : "true");
+            setOpen(menu.dataset.open !== "true");
         });
 
         for (const link of menu.querySelectorAll("a")) {
-            link.addEventListener("click", () => {
-                menu.classList.add("hidden");
-                toggle.setAttribute("aria-expanded", "false");
-            });
+            link.addEventListener("click", () => setOpen(false));
         }
     }
 </script>
