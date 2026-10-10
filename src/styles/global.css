@@ -232,8 +232,8 @@
     --graph-lane-6: var(--color-teal-500);
     --graph-lane-7: var(--color-rose-500);
 
-    --keyword-color: #218bff;
-    --symbol-color: #6639ba;
+    --keyword-color: #0086b3;
+    --symbol-color: #a71d5d;
 
     --ease-snappy: cubic-bezier(0.2, 0.4, 0.1, 0.95);
 }
