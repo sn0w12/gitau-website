@@ -442,7 +442,7 @@ textarea {
     html[data-reveal-ready]
         [data-reveal]:not([data-reveal="false"])[data-revealed] {
         opacity: 1;
-        filter: blur(0);
+        filter: none;
         transform: none;
         transition-delay: var(--reveal-delay, 0ms);
     }
@@ -490,7 +490,6 @@ textarea {
     animation-timing-function: var(--ease-snappy);
 
     @media (prefers-reduced-motion: reduce) {
-        animation-duration: none;
-        animation-timing-function: none;
+        animation-duration: 0s;
     }
 }

@@ -126,6 +126,11 @@ const imageClass = cn(
         animation-timing-function: var(--ease-snappy);
     }
 
+    html[data-shot-transition]::view-transition-old(root),
+    html[data-shot-transition]::view-transition-new(root) {
+        animation: none;
+    }
+
     /* The page is replaced by a static snapshot while the screenshot moves, so
      * the header's blur would sample that frozen frame and double the picture
      * passing under it. Opaque for the length of the morph. */
