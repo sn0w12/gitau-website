@@ -4,7 +4,15 @@ export const SITE_DESCRIPTION =
 
 export const INSTALL_SCRIPT_PATH = "/install.sh";
 
-export const REPO = "sn0w12/gitau";
+export const HERO_SCREENSHOT = {
+    light: "/screenshots/repo-light.png",
+    dark: "/screenshots/repo-dark.png",
+};
+
+export const MAINTAINER = "sn0w12";
+export const MAINTAINER_URL = `https://github.com/${MAINTAINER}`;
+
+export const REPO = `${MAINTAINER}/gitau`;
 export const REPO_URL = `https://github.com/${REPO}`;
 export const README_URL = `${REPO_URL}#readme`;
 export const RELEASES_URL = `${REPO_URL}/releases`;

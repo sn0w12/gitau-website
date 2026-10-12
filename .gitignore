@@ -4,6 +4,8 @@ dist/
 .astro/
 # generated blurhashes, rebuilt by scripts/blurhash.mjs
 .generated/
+# generated responsive widths, rebuilt by scripts/screenshots.mjs
+public/screenshots/*.[0-9]*w.png
 # wrangler
 .wrangler/
 

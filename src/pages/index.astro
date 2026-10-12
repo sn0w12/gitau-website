@@ -6,7 +6,8 @@ import Screenshot from "../components/Screenshot.astro";
 import Button from "../components/ui/Button.astro";
 import Section from "../components/Section.astro";
 import Layout from "../layouts/Layout.astro";
-import { REPO_URL } from "../lib/site";
+import { HERO_SIZES } from "../lib/screenshots";
+import { HERO_SCREENSHOT, REPO_URL } from "../lib/site";
 
 const pillars = [
     {
@@ -63,11 +64,11 @@ const pillars = [
 
             <div class="mt-16">
                 <Screenshot
-                    light="/screenshots/repo-light.png"
-                    dark="/screenshots/repo-dark.png"
+                    light={HERO_SCREENSHOT.light}
+                    dark={HERO_SCREENSHOT.dark}
                     alt="Screenshot of gitau open on a repository, showing the changes panel and diff."
-                    width={1402}
-                    height={920}
+                    sizes={HERO_SIZES}
+                    priority
                 />
             </div>
         </div>

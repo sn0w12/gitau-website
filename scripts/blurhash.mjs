@@ -4,6 +4,8 @@ import { join, relative, sep } from "node:path";
 import { encode } from "blurhash";
 import sharp from "sharp";
 
+import { IMAGE_PATTERN, isVariant } from "./images.mjs";
+
 const PUBLIC_DIR = join(process.cwd(), "public");
 const OUT_DIR = join(process.cwd(), ".generated");
 const OUT_FILE = join(OUT_DIR, "blurhash.json");
@@ -11,7 +13,6 @@ const OUT_FILE = join(OUT_DIR, "blurhash.json");
 const COMPONENTS_X = 4;
 const COMPONENTS_Y = 3;
 const SAMPLE_WIDTH = 32;
-const IMAGE_PATTERN = /\.(png|webp|jpe?g)$/i;
 
 async function hashFor(file) {
     const { data, info } = await sharp(file)
@@ -39,7 +40,7 @@ async function collectImages(directory) {
         const path = join(directory, entry.name);
         if (entry.isDirectory()) {
             files.push(...(await collectImages(path)));
-        } else if (IMAGE_PATTERN.test(entry.name)) {
+        } else if (IMAGE_PATTERN.test(entry.name) && !isVariant(entry.name)) {
             files.push(path);
         }
     }

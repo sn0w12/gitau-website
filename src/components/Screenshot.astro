@@ -1,5 +1,6 @@
 ---
 import { cn } from "../lib/cn";
+import { DIALOG_SIZES, screenshotSource } from "../lib/screenshots";
 import raw from "../../.generated/blurhash.json";
 import Blurhash from "./Blurhash.astro";
 
@@ -9,12 +10,22 @@ interface Props {
     light: string;
     dark: string;
     alt: string;
-    width: number;
-    height: number;
+    sizes?: string;
     class?: string;
+    priority?: boolean;
 }
 
-const { light, dark, alt, width, height, class: className } = Astro.props;
+const {
+    light,
+    dark,
+    alt,
+    sizes = "100vw",
+    class: className,
+    priority = false,
+} = Astro.props;
+
+const lightShot = screenshotSource(light);
+const darkShot = screenshotSource(dark);
 
 const imageClass = cn(
     "w-full rounded-md border border-border shadow-2xl",
@@ -49,18 +60,24 @@ const imageClass = cn(
                 data-shot-image
                 data-light={light}
                 data-dark={dark}
-                width={width}
-                height={height}
+                data-light-srcset={lightShot.srcset}
+                data-dark-srcset={darkShot.srcset}
+                width={lightShot.width}
+                height={lightShot.height}
+                sizes={sizes}
                 alt={alt}
                 class={imageClass}
-                loading="lazy"
+                loading={priority ? "eager" : "lazy"}
+                fetchpriority={priority ? "high" : undefined}
                 decoding="async"
             />
             <noscript>
                 <img
                     src={light}
-                    width={width}
-                    height={height}
+                    srcset={lightShot.srcset}
+                    sizes={sizes}
+                    width={lightShot.width}
+                    height={lightShot.height}
                     alt={alt}
                     class={imageClass}
                     decoding="async"
@@ -82,8 +99,11 @@ const imageClass = cn(
             data-shot-image
             data-light={light}
             data-dark={dark}
-            width={width}
-            height={height}
+            data-light-srcset={lightShot.srcset}
+            data-dark-srcset={darkShot.srcset}
+            width={lightShot.width}
+            height={lightShot.height}
+            sizes={DIALOG_SIZES}
             alt={alt}
             class={cn(
                 imageClass,
@@ -137,8 +157,13 @@ const imageClass = cn(
             "[data-shot-image]"
         )) {
             const src = dark ? image.dataset.dark : image.dataset.light;
+            const srcset = dark
+                ? image.dataset.darkSrcset
+                : image.dataset.lightSrcset;
+
             if (src && image.getAttribute("src") !== src) {
                 image.setAttribute("src", src);
+                if (srcset) image.setAttribute("srcset", srcset);
             }
         }
     }

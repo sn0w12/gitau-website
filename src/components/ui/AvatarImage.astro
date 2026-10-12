@@ -17,6 +17,8 @@ const { src, alt, class: className } = Astro.props;
             alt={alt ?? ""}
             draggable="false"
             class={cn("size-full object-cover", className)}
+            loading="lazy"
+            decoding="async"
             data-slot="avatar-image"
         />
     ) : null
