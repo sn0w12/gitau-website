@@ -89,10 +89,10 @@ const blocks = platformOptions(release).map((option) => ({
                 </a>
             </div>
 
-            <div class="flex flex-col gap-4">
+            <div data-platform-list class="flex flex-col gap-4">
             {
                 blocks.map(({ Icon, ...block }) => (
-                    <div class="flex flex-col gap-3">
+                    <div data-platform={block.id} class="flex flex-col gap-3">
                         <header class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-1.5 text-sm">
                                 <Icon class="size-3.5 shrink-0 text-muted-foreground" />
@@ -129,6 +129,50 @@ const blocks = platformOptions(release).map((option) => ({
                 ))
             }
             </div>
+
+            <script is:inline>
+                (() => {
+                    const list = document.querySelector(
+                        "[data-platform-list]"
+                    );
+                    if (!list) return;
+
+                    const ua = navigator.userAgent;
+                    const platform = (
+                        navigator.userAgentData?.platform ||
+                        navigator.platform ||
+                        ""
+                    ).toLowerCase();
+                    const apple =
+                        /^mac|macintosh|mac os x/.test(platform) ||
+                        /mac os x/i.test(ua);
+                    /* iPadOS reports a desktop macOS user agent, so the touch
+                     * count is the only signal that it is not a Mac. */
+                    const mobile =
+                        /android|iphone|ipod|mobile/i.test(ua) ||
+                        (apple && navigator.maxTouchPoints > 1);
+
+                    let os = null;
+                    if (!mobile) {
+                        if (apple) {
+                            os = "macos";
+                        } else if (/^win|windows/i.test(platform)) {
+                            os = "windows";
+                        } else if (
+                            /linux|cros|x11/i.test(platform) ||
+                            /linux|cros/i.test(ua)
+                        ) {
+                            os = "linux";
+                        }
+                    }
+
+                    const target =
+                        os && list.querySelector(`[data-platform="${os}"]`);
+                    if (target && target !== list.firstElementChild) {
+                        list.prepend(target);
+                    }
+                })();
+            </script>
         </div>
     </div>
 </Layout>
