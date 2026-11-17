@@ -10,9 +10,7 @@ interface Props {
 const { name, color } = Astro.props;
 
 const classes =
-    getTextColor(color) === "bright"
-        ? "text-background dark:text-foreground"
-        : "text-foreground dark:text-background";
+    getTextColor(color) === "bright" ? "text-light" : "text-dark";
 ---
 
 <Badge class={classes} style={`background-color: #${color}`}>{name}</Badge>

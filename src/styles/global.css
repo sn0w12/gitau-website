@@ -352,6 +352,20 @@
     height: stretch;
 }
 
+@utility text-light {
+    color: var(--background);
+    @variant dark {
+        color: var(--foreground);
+    }
+}
+
+@utility text-dark {
+    color: var(--foreground);
+    @variant dark {
+        color: var(--background);
+    }
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

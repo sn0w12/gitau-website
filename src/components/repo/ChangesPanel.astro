@@ -1,5 +1,12 @@
 ---
-import { Archive, ChevronUp, Minus, Plus, Undo2 } from "lucide-astro";
+import {
+    Archive,
+    ChevronUp,
+    ListChecks,
+    Minus,
+    Plus,
+    Undo2,
+} from "lucide-astro";
 
 import { cn } from "../../lib/cn";
 import ChangeIcon from "../ChangeIcon.astro";
@@ -26,6 +33,7 @@ interface Change {
     kind: ChangeKind;
     path: string;
     checked?: boolean;
+    selected?: boolean;
 }
 
 interface Props {
@@ -49,7 +57,7 @@ const someChecked = (entries: Change[]) =>
 <Frame class={cn("flex min-h-0 flex-1 flex-col", className)}>
     <FramePanel class="flex min-h-0 flex-1 flex-col p-0">
         <div class="flex min-h-0 flex-1 flex-col">
-            <div class="border-b p-0.5">
+            <div class="border-b px-0.5 pb-0.5">
                 <Input
                     id="changes-filter-input"
                     value={filter}
@@ -59,18 +67,18 @@ const someChecked = (entries: Change[]) =>
             </div>
 
             <div class="min-h-0 flex-1">
-                <div class="flex items-center justify-between pe-1">
-                    <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-1 text-foreground">
+                <div class="flex items-center justify-between pe-1 hover:bg-accent">
+                    <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground">
                         <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
                         <Checkbox
                             checked={allChecked(staged)}
                             indeterminate={someChecked(staged)}
                             disabled={staged.length === 0}
-                            aria-label="Select all Staged Changes"
+                            aria-label="Select all Staged"
                         />
-                        <span class="font-semibold">Staged Changes</span>
+                        <span class="font-semibold">Staged</span>
                         <Badge
-                            class="h-6.5 rounded-md font-mono sm:h-5.5"
+                            class="h-5 rounded-md font-mono sm:h-5"
                             variant="outline"
                         >
                             {staged.length}
@@ -90,7 +98,20 @@ const someChecked = (entries: Change[]) =>
                 <div class="flex flex-col">
                     {
                         staged.map((entry) => (
-                            <div class="flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent">
+                            <div
+                                role="option"
+                                aria-selected={entry.selected}
+                                data-selected={entry.selected ? "" : undefined}
+                                class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
+                            >
+                                {entry.selected && (
+                                    <span
+                                        aria-hidden="true"
+                                        class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
+                                    >
+                                        <span class="block h-2.5 w-0.5 rounded-r-full bg-primary" />
+                                    </span>
+                                )}
                                 <div class="flex min-w-0 items-center gap-1">
                                     <ChangeIcon
                                         change={entry.kind}
@@ -118,18 +139,18 @@ const someChecked = (entries: Change[]) =>
                 </div>
 
                 <div class="border-t">
-                    <div class="flex items-center justify-between pe-1">
-                        <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-1 text-foreground">
+                    <div class="flex items-center justify-between pe-1 hover:bg-accent">
+                        <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground">
                             <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
                             <Checkbox
                                 checked={allChecked(unstaged)}
                                 indeterminate={someChecked(unstaged)}
                                 disabled={unstaged.length === 0}
-                                aria-label="Select all Changes"
+                                aria-label="Select all Unstaged"
                             />
-                            <span class="font-semibold">Changes</span>
+                            <span class="font-semibold">Unstaged</span>
                             <Badge
-                                class="h-6.5 rounded-md font-mono sm:h-5.5"
+                                class="h-5 rounded-md font-mono sm:h-5"
                                 variant="outline"
                             >
                                 {unstaged.length}
@@ -165,7 +186,20 @@ const someChecked = (entries: Change[]) =>
                     <div class="flex flex-col">
                         {
                             unstaged.map((entry) => (
-                                <div class="flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent">
+                                <div
+                                    role="option"
+                                    aria-selected={entry.selected}
+                                    data-selected={entry.selected ? "" : undefined}
+                                    class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
+                                >
+                                    {entry.selected && (
+                                        <span
+                                            aria-hidden="true"
+                                            class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
+                                        >
+                                            <span class="block h-2.5 w-0.5 rounded-r-full bg-primary" />
+                                        </span>
+                                    )}
                                     <div class="flex min-w-0 items-center gap-1">
                                         <ChangeIcon
                                             change={entry.kind}
@@ -204,20 +238,26 @@ const someChecked = (entries: Change[]) =>
 
             <div class="border-t px-0.5 pt-1 pb-0.5">
                 <fieldset class="flex flex-col gap-1">
-                    <Input
-                        id="commit-summary-input"
-                        placeholder="Summary (required)"
-                        aria-label="Commit summary"
-                    />
+                    <div class="relative">
+                        <Input
+                            id="commit-summary-input"
+                            class="pe-8"
+                            placeholder="Summary (required)"
+                            aria-label="Commit summary"
+                        />
+                        <span class="pointer-events-none absolute inset-y-0 end-2 flex items-center text-muted-foreground">
+                            <ListChecks class="size-3.5" />
+                        </span>
+                    </div>
                     <Textarea
                         placeholder="Description"
                         aria-label="Commit description"
-                        rows={2}
+                        rows={4}
                     />
                     <Button
                         variant="info"
                         type="submit"
-                        class="w-full text-background dark:text-foreground"
+                        class="w-full text-light"
                         disabled
                     >
                         Commit to {branch}
