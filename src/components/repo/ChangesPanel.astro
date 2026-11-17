@@ -1,16 +1,10 @@
 ---
-import {
-    Archive,
-    ChevronUp,
-    ListChecks,
-    Minus,
-    Plus,
-    Undo2,
-} from "lucide-astro";
+import { Archive, ChevronUp, Minus, Plus, Undo2 } from "lucide-astro";
 
 import { cn } from "../../lib/cn";
 import ChangeIcon from "../ChangeIcon.astro";
 import SplitPath from "../SplitPath.astro";
+import CommitHooks from "./CommitHooks.astro";
 import Badge from "../ui/Badge.astro";
 import Button from "../ui/Button.astro";
 import Checkbox from "../ui/Checkbox.astro";
@@ -57,7 +51,7 @@ const someChecked = (entries: Change[]) =>
 <Frame class={cn("flex min-h-0 flex-1 flex-col", className)}>
     <FramePanel class="flex min-h-0 flex-1 flex-col p-0">
         <div class="flex min-h-0 flex-1 flex-col">
-            <div class="border-b px-0.5 pb-0.5">
+            <div class="border-b p-0.5">
                 <Input
                     id="changes-filter-input"
                     value={filter}
@@ -238,17 +232,14 @@ const someChecked = (entries: Change[]) =>
 
             <div class="border-t px-0.5 pt-1 pb-0.5">
                 <fieldset class="flex flex-col gap-1">
-                    <div class="relative">
-                        <Input
-                            id="commit-summary-input"
-                            class="pe-8"
-                            placeholder="Summary (required)"
-                            aria-label="Commit summary"
-                        />
-                        <span class="pointer-events-none absolute inset-y-0 end-2 flex items-center text-muted-foreground">
-                            <ListChecks class="size-3.5" />
-                        </span>
-                    </div>
+                    <Input
+                        id="commit-summary-input"
+                        class="pe-8"
+                        placeholder="Summary (required)"
+                        aria-label="Commit summary"
+                    >
+                        <CommitHooks slot="trailing" />
+                    </Input>
                     <Textarea
                         placeholder="Description"
                         aria-label="Commit description"

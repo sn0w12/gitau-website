@@ -39,7 +39,7 @@ const wrapperClassName = cn(
 );
 ---
 
-<span class={wrapperClassName} data-size={size} data-slot="input-control">
+<div class={wrapperClassName} data-size={size} data-slot="input-control">
     <input
         class={inputClassName}
         id={id}
@@ -53,4 +53,5 @@ const wrapperClassName = cn(
         autocomplete="off"
         data-slot="input"
     />
-</span>
+    <slot name="trailing" />
+</div>

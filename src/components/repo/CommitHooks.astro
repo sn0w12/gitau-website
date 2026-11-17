@@ -1,0 +1,244 @@
+---
+import { Check, ListChecks, Pencil, Play, SkipForward } from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+import { buttonVariants } from "../ui/button-variants";
+import Button from "../ui/Button.astro";
+
+const hooks = [
+    {
+        name: "pre-commit",
+        status: "done" as const,
+        duration: "0.42s",
+        executable: true,
+        output: ["Running eslint...", "✔ No problems found."],
+        open: false,
+    },
+    {
+        name: "commit-msg",
+        status: "none" as const,
+        duration: null,
+        executable: false,
+        output: [],
+        open: false,
+    },
+];
+---
+
+<div class="absolute end-1 top-1/2 -translate-y-1/2" data-commit-hooks>
+    <button
+        type="button"
+        class={cn(
+            buttonVariants({ variant: "ghost", size: "icon-xs" }),
+            "relative text-primary"
+        )}
+        aria-label="Pre-commit hooks"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        data-commit-hooks-trigger
+    >
+        <ListChecks class="size-3.5" />
+        <span
+            aria-hidden="true"
+            class="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-success"
+        ></span>
+    </button>
+
+    <div
+        class="absolute right-0 bottom-full z-50 mb-1.5 w-100 origin-bottom-right pointer-events-none data-[open]:pointer-events-auto"
+        role="dialog"
+        aria-label="Commit hooks"
+        aria-hidden="true"
+        tabindex="-1"
+        inert
+        data-commit-hooks-popup
+    >
+        <div
+            class="relative overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg/5 not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]"
+        >
+            <div class="p-2">
+                <div class="flex items-center justify-between pb-1">
+                    <h2 class="text-sm font-semibold">Commit hooks</h2>
+                    <div class="flex items-center gap-0.5">
+                        <Button
+                            size="icon-2xs"
+                            variant="ghost"
+                            aria-label="Run all hooks"
+                        >
+                            <SkipForward />
+                        </Button>
+                        <Button
+                            size="icon-2xs"
+                            variant="ghost"
+                            aria-label="Edit commit hooks"
+                        >
+                            <Pencil />
+                        </Button>
+                    </div>
+                </div>
+
+                <ul class="space-y-0.5">
+                    {
+                        hooks.map((hook) => (
+                            <li class="rounded-md">
+                                <div class="flex items-center rounded-md pr-0.5 pl-1 hover:bg-accent">
+                                    <button
+                                        type="button"
+                                        class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 py-1 text-left text-xs"
+                                        aria-expanded={
+                                            hook.open ? "true" : "false"
+                                        }
+                                        data-hook-toggle
+                                    >
+                                        {hook.status === "done" && (
+                                            <Check class="size-3 shrink-0 text-success" />
+                                        )}
+                                        <span class="truncate font-mono">
+                                            {hook.name}
+                                        </span>
+                                        {!hook.executable && (
+                                            <span class="shrink-0 text-muted-foreground">
+                                                not executable
+                                            </span>
+                                        )}
+                                        {hook.duration && (
+                                            <span class="ml-auto shrink-0 pr-0.5 font-mono text-muted-foreground tabular-nums">
+                                                {hook.duration}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <Button
+                                        size="icon-2xs"
+                                        variant="ghost"
+                                        aria-label={`Run ${hook.name}`}
+                                    >
+                                        <Play />
+                                    </Button>
+                                </div>
+                                <div
+                                    class="grid"
+                                    aria-hidden={hook.open ? "false" : "true"}
+                                    data-open={hook.open ? "" : undefined}
+                                    data-hook-output
+                                >
+                                    <div class="overflow-hidden">
+                                        <div class="mb-0.5 ml-4 rounded-md bg-muted/40">
+                                            <div class="max-h-32 overflow-y-auto p-1.5 font-mono text-xs leading-4">
+                                                {hook.output.length > 0 ? (
+                                                    hook.output.map((line) => (
+                                                        <div class="whitespace-pre-wrap">
+                                                            {line}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p class="text-muted-foreground">
+                                                        (no output)
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    for (const root of document.querySelectorAll<HTMLElement>(
+        "[data-commit-hooks]"
+    )) {
+        const trigger = root.querySelector<HTMLElement>(
+            "[data-commit-hooks-trigger]"
+        );
+        const popup = root.querySelector<HTMLElement>(
+            "[data-commit-hooks-popup]"
+        );
+        if (!trigger || !popup) continue;
+
+        const isOpen = () => popup.hasAttribute("data-open");
+
+        const open = () => {
+            popup.setAttribute("data-open", "");
+            popup.setAttribute("aria-hidden", "false");
+            popup.removeAttribute("inert");
+            trigger.setAttribute("aria-expanded", "true");
+            popup.focus({ preventScroll: true });
+        };
+
+        const close = (restoreFocus = false) => {
+            popup.removeAttribute("data-open");
+            popup.setAttribute("aria-hidden", "true");
+            popup.setAttribute("inert", "");
+            trigger.setAttribute("aria-expanded", "false");
+            if (restoreFocus) trigger.focus({ preventScroll: true });
+        };
+
+        trigger.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (isOpen()) close();
+            else open();
+        });
+
+        document.addEventListener("click", (event) => {
+            if (isOpen() && !root.contains(event.target as Node)) close();
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && isOpen()) close(true);
+        });
+
+        for (const toggle of root.querySelectorAll<HTMLElement>(
+            "[data-hook-toggle]"
+        )) {
+            toggle.addEventListener("click", () => {
+                const output = toggle
+                    .closest("li")
+                    ?.querySelector("[data-hook-output]");
+                if (!output) return;
+                const next = !output.hasAttribute("data-open");
+                output.toggleAttribute("data-open", next);
+                output.setAttribute("aria-hidden", String(!next));
+                toggle.setAttribute("aria-expanded", String(next));
+            });
+        }
+    }
+</script>
+
+<style>
+    [data-commit-hooks-popup] {
+        opacity: 0;
+        scale: 0.98;
+    }
+
+    [data-commit-hooks-popup][data-open] {
+        opacity: 1;
+        scale: 1;
+        animation: commit-hooks-open 150ms var(--ease-snappy);
+    }
+
+    [data-hook-output] {
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 200ms var(--ease-snappy);
+    }
+
+    [data-hook-output][data-open] {
+        grid-template-rows: 1fr;
+    }
+
+    @keyframes commit-hooks-open {
+        from {
+            opacity: 0;
+            scale: 0.98;
+        }
+        to {
+            opacity: 1;
+            scale: 1;
+        }
+    }
+
+</style>
