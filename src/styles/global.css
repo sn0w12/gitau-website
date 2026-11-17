@@ -232,8 +232,18 @@
     --graph-lane-6: var(--color-teal-500);
     --graph-lane-7: var(--color-rose-500);
 
-    --keyword-color: #0086b3;
-    --symbol-color: #a71d5d;
+    --syntax-attribute: #1c719a;
+    --syntax-comment: #737373;
+    --syntax-constant: #724aab;
+    --syntax-control: #b23b1d;
+    --syntax-function: #aa6000;
+    --syntax-keyword: #b23b1d;
+    --syntax-number: #724aab;
+    --syntax-operator: #a34e55;
+    --syntax-punctuation: #696969;
+    --syntax-string: #007145;
+    --syntax-type: #1c719a;
+    --syntax-variable: #262626;
 
     --ease-snappy: cubic-bezier(0.2, 0.4, 0.1, 0.95);
 }
@@ -289,8 +299,18 @@
     --code-foreground: var(--foreground);
     --code-highlight: --alpha(var(--color-white) / 4%);
 
-    --keyword-color: #e06c75;
-    --symbol-color: #c778dd;
+    --syntax-attribute: #9dd7f2;
+    --syntax-comment: #8a8a8a;
+    --syntax-constant: #8fe8ff;
+    --syntax-control: #b2aaff;
+    --syntax-function: #e1d195;
+    --syntax-keyword: #4a9fd0;
+    --syntax-number: #b0dabd;
+    --syntax-operator: #bebebe;
+    --syntax-punctuation: #bebebe;
+    --syntax-string: #eb9e84;
+    --syntax-type: #5dd3af;
+    --syntax-variable: #9dd7f2;
 }
 
 @utility clip-inset-backdrop {
@@ -486,11 +506,28 @@ textarea {
 }
 
 .install {
-    [data-install-token="keyword"] {
-        color: var(--keyword-color);
+    [data-install-token="command"],
+    [data-install-token="flag-prefix"],
+    [data-install-token="flag-name"] {
+        color: #0086b3;
     }
-    [data-install-token="symbol"] {
-        color: var(--symbol-color);
+    [data-install-token="pipe"] {
+        color: #a71d5d;
+    }
+}
+
+.dark .install {
+    [data-install-token="command"] {
+        color: #e1d195;
+    }
+    [data-install-token="flag-prefix"] {
+        color: #bebebe;
+    }
+    [data-install-token="flag-name"] {
+        color: #9dd7f2;
+    }
+    [data-install-token="pipe"] {
+        color: #bebebe;
     }
 }
 

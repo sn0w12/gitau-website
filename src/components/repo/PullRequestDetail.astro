@@ -1,0 +1,379 @@
+---
+import {
+    CheckCheck,
+    ChevronRight,
+    Ellipsis,
+} from "lucide-astro";
+
+import LabelBadge from "../github/LabelBadge.astro";
+import Badge from "../ui/Badge.astro";
+import Frame from "../ui/Frame.astro";
+import FrameHeader from "../ui/FrameHeader.astro";
+import FramePanel from "../ui/FramePanel.astro";
+
+const labels = [
+    { name: "enhancement", color: "a2eeef" },
+    { name: "backend", color: "5319e7" },
+];
+
+const checks = ["cargo test", "clippy", "rustfmt"];
+
+const reviewers = [
+    { initial: "h", name: "helix", class: "bg-info text-light" },
+    { initial: "n", name: "nora", class: "bg-warning text-dark" },
+];
+
+const hunk = [
+    {
+        kind: "hunk",
+        marker: "",
+        text: "@@ -118,6 +118,7 @@ impl CloneProgress {",
+    },
+    {
+        kind: "deletion",
+        marker: "-",
+        text: "    let progress = Progress::new();",
+    },
+    {
+        kind: "addition",
+        marker: "+",
+        text: "    let progress = Progress::with_filter(&filter);",
+    },
+    {
+        kind: "context",
+        marker: " ",
+        text: "    let receiver = Receiver::new(progress);",
+    },
+    {
+        kind: "context",
+        marker: " ",
+        text: "    let handle = spawn(receiver.run());",
+    },
+];
+
+const RUST_TONE = {
+    comment: "var(--syntax-comment)",
+    function: "var(--syntax-function)",
+    keyword: "var(--syntax-keyword)",
+    number: "var(--syntax-number)",
+    punctuation: "var(--syntax-punctuation)",
+    string: "var(--syntax-string)",
+    type: "var(--syntax-type)",
+    variable: "var(--syntax-variable)",
+} as const;
+
+const RUST_TOKEN =
+    /(\/\/[^\n]*)|("(?:[^"\\]|\\.)*")|\b(as|async|await|break|const|continue|crate|dyn|else|enum|extern|false|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|true|type|unsafe|use|where|while)\b|\b(\d+(?:\.\d+)?)\b|\b([A-Z][A-Za-z0-9_]*)\b|(::|[&*|.])|\b([a-z_][A-Za-z0-9_]*)(?=\s*\()|\b([a-z_][A-Za-z0-9_]*)\b/g;
+
+function escapeHtml(value: string) {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+}
+
+function highlightRust(code: string) {
+    let html = "";
+    let cursor = 0;
+    for (const match of code.matchAll(RUST_TOKEN)) {
+        const start = match.index ?? 0;
+        html += escapeHtml(code.slice(cursor, start));
+        const text = match[0];
+        let tone: keyof typeof RUST_TONE | undefined;
+        if (match[1]) tone = "comment";
+        else if (match[2]) tone = "string";
+        else if (match[3]) tone = "keyword";
+        else if (match[4]) tone = "number";
+        else if (match[5]) tone = "type";
+        else if (match[6]) tone = "punctuation";
+        else if (match[7]) tone = "function";
+        else if (match[8]) tone = "variable";
+        html += tone
+            ? `<span style="color:${RUST_TONE[tone]}">${escapeHtml(text)}</span>`
+            : escapeHtml(text);
+        cursor = start + text.length;
+    }
+    html += escapeHtml(code.slice(cursor));
+    return html;
+}
+---
+
+<div class="grid gap-2 lg:grid-cols-3">
+    <div class="flex min-w-0 flex-col pr-1 lg:col-span-2">
+        <Frame class="ui-selectable text-sm">
+            <FrameHeader class="flex flex-row items-center justify-between px-2 py-1.5">
+                <div class="flex items-center gap-1">
+                    <span
+                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-info text-xs font-medium text-light"
+                    >
+                        h
+                    </span>
+                    <span>
+                        helix{" "}
+                        <span class="text-muted-foreground">
+                            opened 2 hours ago
+                        </span>
+                    </span>
+                </div>
+                <Ellipsis class="size-4 text-muted-foreground" />
+            </FrameHeader>
+            <FramePanel class="px-3 py-2">
+                <p class="leading-relaxed">
+                    Adds
+                    <code
+                        class="rounded-sm bg-muted px-1 py-0.5 font-mono text-xs whitespace-nowrap"
+                    >
+                        --filter=blob:none
+                    </code>
+                    to the clone dialog. The transfer panel keeps its phase
+                    labels and object counts while remaining blobs load on
+                    demand.
+                </p>
+            </FramePanel>
+        </Frame>
+
+        <div class="ml-4.5 h-2 w-0.5 bg-muted"></div>
+
+        <div class="ui-selectable flex items-center gap-1 px-1.5 py-1 text-sm">
+            <div
+                class="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-muted text-success"
+            >
+                <CheckCheck class="size-4" />
+            </div>
+            <span
+                class="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-warning text-xs font-medium text-dark"
+            >
+                n
+            </span>
+            <span>
+                nora{" "}
+                <span class="text-muted-foreground">
+                    approved these changes 40 minutes ago
+                </span>
+            </span>
+        </div>
+
+        <div class="ml-4.5 h-2 w-0.5 bg-muted"></div>
+
+        <div class="ui-selectable flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-sm">
+            <span
+                class="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-warning text-[.625rem] font-medium text-dark"
+            >
+                n
+            </span>
+            <span class="font-mono text-xs text-muted-foreground">
+                crates/git/src/runtime/clone.rs:119
+            </span>
+            <span class="truncate text-xs text-muted-foreground">
+                nora 35 minutes ago
+            </span>
+        </div>
+
+        <div class="ml-4.5 h-2 w-0.5 bg-muted"></div>
+
+        <Frame class="ui-selectable text-sm">
+            <FramePanel class="px-3 py-2">
+                <p class="leading-relaxed">
+                    This drops the callback the dialog listens to. Can we keep
+                    the handler and pass it the filtered counts?
+                </p>
+            </FramePanel>
+        </Frame>
+
+        <div class="mt-2 flex gap-2">
+            <div class="ml-4.5 w-0.5 shrink-0 bg-muted"></div>
+            <div class="min-w-0 flex-1">
+                <button
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-sm px-0.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+                    aria-expanded="true"
+                    data-pr-diff-toggle
+                >
+                    <ChevronRight
+                        class="size-3.5 shrink-0 rotate-90 transition-transform"
+                        data-pr-diff-chevron
+                    />
+                    <span>Show the diff for this comment</span>
+                </button>
+                <div
+                    class="grid grid-rows-[1fr]"
+                    data-pr-diff-panel
+                    data-open
+                >
+                    <div class="overflow-hidden">
+                        <Frame class="min-w-0">
+                            <FramePanel class="code-hl overflow-x-auto p-0 font-mono text-xs">
+                                <div class="ui-selectable w-max min-w-full p-2 pb-1 whitespace-pre">
+                                    {
+                                        hunk.map((row) => (
+                                            <div
+                                                class={`flex h-5 items-center border-l-3 ${
+                                                    row.kind === "addition"
+                                                        ? "border-success bg-success/12"
+                                                        : row.kind === "deletion"
+                                                          ? "border-destructive border-slashed bg-destructive/12"
+                                                          : row.kind === "hunk"
+                                                            ? "border-transparent text-muted-foreground"
+                                                            : "border-transparent"
+                                                }`}
+                                            >
+                                                {row.kind === "hunk" ? (
+                                                    <span>{row.text}</span>
+                                                ) : (
+                                                    <>
+                                                        <span class="ml-1 inline-block w-4 shrink-0 text-muted-foreground select-none">
+                                                            {row.marker}
+                                                        </span>
+                                                        <span
+                                                            set:html={highlightRust(
+                                                                row.text
+                                                            )}
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </FramePanel>
+                        </Frame>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <Frame class="flex h-fit w-full flex-col">
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Changes</span>
+                <div class="flex flex-wrap items-center gap-1 text-sm">
+                    <Badge variant="success">+184</Badge>
+                    <Badge variant="error">-32</Badge>
+                    <span class="text-muted-foreground">6 files</span>
+                    <span aria-hidden="true" class="text-muted-foreground/50">
+                        ·
+                    </span>
+                    <span class="text-muted-foreground">4 commits</span>
+                </div>
+            </FramePanel>
+
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Checks</span>
+                <ul class="flex flex-col gap-0.5">
+                    {
+                        checks.map((name) => (
+                            <li class="text-sm">
+                                <div class="ui-selectable flex w-full items-center gap-1.5 rounded-sm text-start">
+                                    <CheckCheck class="size-4 shrink-0 text-success" />
+                                    <span class="truncate">{name}</span>
+                                    <span class="ms-auto shrink-0 text-xs text-muted-foreground">
+                                        passed
+                                    </span>
+                                </div>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </FramePanel>
+
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Reviewers</span>
+                <div class="flex -space-x-[0.4rem]">
+                    {
+                        reviewers.map((reviewer) => (
+                            <span
+                                class={`flex size-6 items-center justify-center rounded-full text-xs font-medium ring-2 ring-card ${reviewer.class}`}
+                                aria-label={reviewer.name}
+                            >
+                                {reviewer.initial}
+                            </span>
+                        ))
+                    }
+                </div>
+            </FramePanel>
+
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Labels</span>
+                <div class="flex flex-wrap gap-1">
+                    {
+                        labels.map((label) => (
+                            <LabelBadge
+                                name={label.name}
+                                color={label.color}
+                            />
+                        ))
+                    }
+                </div>
+            </FramePanel>
+
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Reviews</span>
+                <ul class="flex flex-col gap-0.5">
+                    <li class="flex items-center gap-1.5">
+                        <span class="text-success">
+                            <CheckCheck class="size-4" />
+                        </span>
+                        <span class="truncate text-sm">nora</span>
+                        <span class="truncate text-xs text-muted-foreground">
+                            approved these changes
+                        </span>
+                    </li>
+                </ul>
+            </FramePanel>
+
+            <FramePanel class="flex flex-col p-2 pt-1">
+                <span class="text-sm">Participants</span>
+                <div class="flex -space-x-[0.4rem]">
+                    {
+                        reviewers.map((reviewer) => (
+                            <span
+                                class={`flex size-6 items-center justify-center rounded-full text-xs font-medium ring-2 ring-card ${reviewer.class}`}
+                                aria-label={reviewer.name}
+                            >
+                                {reviewer.initial}
+                            </span>
+                        ))
+                    }
+                </div>
+            </FramePanel>
+        </Frame>
+    </div>
+</div>
+
+<script>
+    for (const button of document.querySelectorAll<HTMLElement>(
+        "[data-pr-diff-toggle]"
+    )) {
+        const panel = button.parentElement?.querySelector<HTMLElement>(
+            "[data-pr-diff-panel]"
+        );
+        if (!panel) continue;
+        const chevron = button.querySelector<HTMLElement>(
+            "[data-pr-diff-chevron]"
+        );
+        button.addEventListener("click", () => {
+            const open = !panel.hasAttribute("data-open");
+            panel.toggleAttribute("data-open", open);
+            button.setAttribute("aria-expanded", String(open));
+            chevron?.classList.toggle("rotate-90", open);
+        });
+    }
+</script>
+
+<style>
+    [data-pr-diff-panel] {
+        transition: grid-template-rows 200ms var(--ease-snappy);
+    }
+
+    [data-pr-diff-panel]:not([data-open]) {
+        grid-template-rows: 0fr;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-pr-diff-panel] {
+            transition: none;
+        }
+    }
+</style>

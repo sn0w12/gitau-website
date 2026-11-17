@@ -1,0 +1,340 @@
+---
+import { GITAU_HISTORY } from "../../lib/gitau-history";
+import Frame from "../ui/Frame.astro";
+import FramePanel from "../ui/FramePanel.astro";
+
+interface Bucket {
+    label: string;
+    additions: number;
+    deletions: number;
+    commits: number;
+}
+
+const tick = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+});
+
+const rows: Bucket[] = GITAU_HISTORY.map((bucket) => ({
+    label: tick.format(new Date(bucket.startSeconds * 1000)),
+    additions: bucket.additions,
+    deletions: bucket.deletions,
+    commits: bucket.commits,
+}));
+
+const WIDTH = 1200;
+const HEIGHT = 140;
+const band = WIDTH / rows.length;
+const totals = rows.map((row) => row.additions + row.deletions);
+const maxTotal = Math.max(...totals);
+const maxCommits = Math.max(...rows.map((row) => row.commits));
+
+const round = (value: number) => Math.round(value * 100) / 100;
+
+const bars = rows.map((row, index) => {
+    const additions = (row.additions / maxTotal) * HEIGHT;
+    const deletions = (row.deletions / maxTotal) * HEIGHT;
+    return {
+        x: round(index * band),
+        width: round(band),
+        additions: round(additions),
+        deletions: round(deletions),
+        additionsY: round(HEIGHT - additions),
+        deletionsY: round(HEIGHT - additions - deletions),
+    };
+});
+
+const points = rows.map((row, index) => [
+    index * band + band / 2,
+    HEIGHT - (row.commits / maxCommits) * HEIGHT,
+] as [number, number]);
+
+function smoothPath(shape: [number, number][]) {
+    if (shape.length === 0) return "";
+    if (shape.length === 1) {
+        return `M${round(shape[0][0])},${round(shape[0][1])}`;
+    }
+
+    const last = shape.length - 1;
+    const slope: number[] = [];
+    for (let index = 0; index < last; index += 1) {
+        const dx = shape[index + 1][0] - shape[index][0];
+        slope[index] =
+            dx === 0 ? 0 : (shape[index + 1][1] - shape[index][1]) / dx;
+    }
+
+    const tangent: number[] = [];
+    tangent[0] = slope[0];
+    tangent[last] = slope[last - 1];
+    for (let index = 1; index < last; index += 1) {
+        const before = slope[index - 1];
+        const after = slope[index];
+        if (before * after <= 0) {
+            tangent[index] = 0;
+            continue;
+        }
+        const mean = 2 / (1 / before + 1 / after);
+        const limit = 3 * Math.min(Math.abs(before), Math.abs(after));
+        tangent[index] = Math.sign(mean) * Math.min(Math.abs(mean), limit);
+    }
+
+    let d = `M ${round(shape[0][0])} ${round(shape[0][1])}`;
+    for (let index = 0; index < last; index += 1) {
+        const [x0, y0] = shape[index];
+        const [x1, y1] = shape[index + 1];
+        const step = (x1 - x0) / 3;
+        d += ` C ${round(x0 + step)} ${round(y0 + tangent[index] * step)} ${round(x1 - step)} ${round(y1 - tangent[index + 1] * step)} ${round(x1)} ${round(y1)}`;
+    }
+    return d;
+}
+
+const linePath = smoothPath(points);
+const areaPath = `${linePath} L ${round(points.at(-1)![0])} ${HEIGHT} L ${round(points[0][0])} ${HEIGHT} Z`;
+
+const chartData = JSON.stringify(
+    rows.map((row) => ({
+        label: row.label,
+        additions: row.additions,
+        deletions: row.deletions,
+        commits: row.commits,
+    }))
+);
+---
+
+<Frame class="flex flex-col">
+    <FramePanel class="flex flex-col p-2">
+        <div
+            class="relative h-[73px] w-full"
+            data-history-chart
+            data-chart-values={chartData}
+            role="img"
+            aria-label="Additions, deletions, and commits per time bucket"
+        >
+    <svg
+        class="size-full text-foreground"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+    >
+        <defs>
+            <linearGradient
+                id="history-commits-fill"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+            >
+                <stop
+                    offset="0"
+                    stop-color="currentColor"
+                    stop-opacity="0.32"
+                />
+                <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+            </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#history-commits-fill)" />
+        <path
+            d={linePath}
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            vector-effect="non-scaling-stroke"
+        />
+        {
+            bars.map((bar, index) => (
+                <g
+                    class="history-bar"
+                    style={`animation-delay: ${index * 22}ms`}
+                >
+                    <rect
+                        x={bar.x}
+                        y={bar.additionsY}
+                        width={bar.width}
+                        height={bar.additions}
+                        fill="var(--success)"
+                        rx="3"
+                    />
+                    <rect
+                        x={bar.x}
+                        y={bar.deletionsY}
+                        width={bar.width}
+                        height={bar.deletions}
+                        fill="var(--destructive)"
+                        rx="3"
+                    />
+                </g>
+            ))
+        }
+    </svg>
+
+    <div
+        class="pointer-events-none absolute inset-y-0 rounded-sm bg-foreground/6 opacity-0 transition-opacity"
+        style={`left: 0; width: ${100 / rows.length}%`}
+        data-chart-crosshair
+    >
+    </div>
+
+    <div class="absolute inset-0 flex" data-chart-hits>
+        {
+            rows.map((row, index) => (
+                <div
+                    class="h-full flex-1"
+                    data-chart-hit={index}
+                    aria-hidden="true"
+                />
+            ))
+        }
+    </div>
+
+    <div
+        class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 rounded-lg border border-border/50 bg-background shadow-xl"
+        data-chart-tooltip
+    >
+        <div class="grid w-max min-w-32 items-start gap-1 px-2.5 py-1.5 text-xs">
+            <div class="font-medium" data-chart-label></div>
+            <div class="grid gap-0.5">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span
+                            aria-hidden="true"
+                            class="size-2.5 shrink-0 rounded-xs bg-success"
+                        ></span>
+                        <span class="text-muted-foreground">Additions</span>
+                    </div>
+                    <span
+                        class="font-mono font-medium tabular-nums"
+                        data-chart-additions
+                    ></span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span
+                            aria-hidden="true"
+                            class="size-2.5 shrink-0 rounded-xs bg-destructive"
+                        ></span>
+                        <span class="text-muted-foreground">Deletions</span>
+                    </div>
+                    <span
+                        class="font-mono font-medium tabular-nums"
+                        data-chart-deletions
+                    ></span>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span
+                            aria-hidden="true"
+                            class="size-2.5 shrink-0 rounded-xs bg-foreground"
+                        ></span>
+                        <span class="text-muted-foreground">Commits</span>
+                    </div>
+                    <span
+                        class="font-mono font-medium tabular-nums"
+                        data-chart-commits
+                    ></span>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </FramePanel>
+</Frame>
+
+<script>
+    interface ChartBucket {
+        label: string;
+        additions: number;
+        deletions: number;
+        commits: number;
+    }
+
+    const NUMBER = new Intl.NumberFormat("en-US");
+
+    for (const root of document.querySelectorAll<HTMLElement>(
+        "[data-history-chart]"
+    )) {
+        const values = JSON.parse(
+            root.dataset.chartValues ?? "[]"
+        ) as ChartBucket[];
+        if (values.length === 0) continue;
+
+        const hits = root.querySelector<HTMLElement>("[data-chart-hits]");
+        const crosshair = root.querySelector<HTMLElement>(
+            "[data-chart-crosshair]"
+        );
+        const tooltip = root.querySelector<HTMLElement>("[data-chart-tooltip]");
+        const label = root.querySelector<HTMLElement>("[data-chart-label]");
+        const additions = root.querySelector<HTMLElement>(
+            "[data-chart-additions]"
+        );
+        const deletions = root.querySelector<HTMLElement>(
+            "[data-chart-deletions]"
+        );
+        const commits =
+            root.querySelector<HTMLElement>("[data-chart-commits]");
+        if (
+            !hits ||
+            !crosshair ||
+            !tooltip ||
+            !label ||
+            !additions ||
+            !deletions ||
+            !commits
+        ) {
+            continue;
+        }
+
+        const show = (index: number) => {
+            const bucket = values[index];
+            if (!bucket) return;
+            const width = 100 / values.length;
+            crosshair.style.left = `${index * width}%`;
+            crosshair.style.width = `${width}%`;
+            crosshair.style.opacity = "1";
+            tooltip.style.left = `clamp(80px, ${index * width + width / 2}%, calc(100% - 80px))`;
+            label.textContent = bucket.label;
+            additions.textContent = NUMBER.format(bucket.additions);
+            deletions.textContent = NUMBER.format(bucket.deletions);
+            commits.textContent = String(bucket.commits);
+            tooltip.classList.remove("hidden");
+        };
+
+        const hide = () => {
+            crosshair.style.opacity = "0";
+            tooltip.classList.add("hidden");
+        };
+
+        for (const hit of hits.querySelectorAll<HTMLElement>(
+            "[data-chart-hit]"
+        )) {
+            hit.addEventListener("pointerenter", () => {
+                show(Number(hit.dataset.chartHit));
+            });
+        }
+
+        hits.addEventListener("pointerleave", hide);
+    }
+</script>
+
+<style>
+    .history-bar {
+        transform-box: fill-box;
+        transform-origin: bottom;
+        animation: history-bar-in 350ms var(--ease-snappy) both;
+    }
+
+    @keyframes history-bar-in {
+        from {
+            transform: scaleY(0);
+        }
+        to {
+            transform: scaleY(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .history-bar {
+            animation: none;
+        }
+    }
+</style>

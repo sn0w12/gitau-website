@@ -45,12 +45,13 @@ const hooks = [
     </button>
 
     <div
-        class="absolute right-0 bottom-full z-50 mb-1.5 w-100 origin-bottom-right pointer-events-none data-[open]:pointer-events-auto"
+        class="absolute z-50 w-100 max-w-[calc(100vw-2rem)] origin-bottom pointer-events-none data-[open]:pointer-events-auto"
         role="dialog"
         aria-label="Commit hooks"
         aria-hidden="true"
         tabindex="-1"
         inert
+        data-side="top"
         data-commit-hooks-popup
     >
         <div
@@ -162,11 +163,36 @@ const hooks = [
 
         const isOpen = () => popup.hasAttribute("data-open");
 
+        const place = () => {
+            const triggerRect = trigger.getBoundingClientRect();
+            const width = popup.offsetWidth;
+            const height = popup.offsetHeight;
+            const margin = 16;
+            const gap = 6;
+            const center = triggerRect.left + triggerRect.width / 2;
+            const min = margin + width / 2;
+            const max = window.innerWidth - margin - width / 2;
+            const target = Math.min(Math.max(center, min), Math.max(min, max));
+            popup.style.setProperty(
+                "--commit-hooks-shift",
+                `${target - center}px`
+            );
+
+            const spaceAbove = triggerRect.top;
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            popup.dataset.side =
+                spaceAbove < height + gap + margin &&
+                spaceBelow > spaceAbove
+                    ? "bottom"
+                    : "top";
+        };
+
         const open = () => {
             popup.setAttribute("data-open", "");
             popup.setAttribute("aria-hidden", "false");
             popup.removeAttribute("inert");
             trigger.setAttribute("aria-expanded", "true");
+            place();
             popup.focus({ preventScroll: true });
         };
 
@@ -192,6 +218,18 @@ const hooks = [
             if (event.key === "Escape" && isOpen()) close(true);
         });
 
+        window.addEventListener("resize", () => {
+            if (isOpen()) place();
+        });
+
+        window.addEventListener("scroll", () => {
+            if (isOpen()) place();
+        }, { passive: true });
+
+        new ResizeObserver(() => {
+            if (isOpen()) place();
+        }).observe(popup);
+
         for (const toggle of root.querySelectorAll<HTMLElement>(
             "[data-hook-toggle]"
         )) {
@@ -204,6 +242,7 @@ const hooks = [
                 output.toggleAttribute("data-open", next);
                 output.setAttribute("aria-hidden", String(!next));
                 toggle.setAttribute("aria-expanded", String(next));
+                place();
             });
         }
     }
@@ -211,8 +250,26 @@ const hooks = [
 
 <style>
     [data-commit-hooks-popup] {
+        left: 50%;
+        translate: calc(-50% + var(--commit-hooks-shift, 0px)) 0;
         opacity: 0;
         scale: 0.98;
+    }
+
+    [data-commit-hooks-popup]:not([data-open]) {
+        display: none;
+    }
+
+    [data-commit-hooks-popup][data-side="top"] {
+        bottom: 100%;
+        margin-bottom: 6px;
+    }
+
+    [data-commit-hooks-popup][data-side="bottom"] {
+        top: 100%;
+        bottom: auto;
+        margin-top: 6px;
+        transform-origin: top;
     }
 
     [data-commit-hooks-popup][data-open] {

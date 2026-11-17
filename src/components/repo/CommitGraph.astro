@@ -105,7 +105,7 @@ function edgePath(edge: LaneEdge, cy: number) {
 }
 ---
 
-<div class="relative">
+<div class="relative" data-commit-graph>
     <svg
         class="pointer-events-none absolute top-0 left-0 -ml-3"
         width={railWidth}
@@ -249,9 +249,9 @@ function edgePath(edge: LaneEdge, cy: number) {
             <col style={`width: ${railWidth}px`} />
             <col />
             <col class="max-sm:hidden" style="width: 9rem" />
-            <col class="max-sm:hidden" style="width: 6rem" />
             <col class="max-sm:hidden" style="width: 5rem" />
-            <col style="width: 4.5rem" />
+            <col class="max-sm:hidden" style="width: 8rem" />
+            <col style="width: 5rem" />
         </colgroup>
         <tbody>
             {
@@ -259,8 +259,10 @@ function edgePath(edge: LaneEdge, cy: number) {
                     const refs = collapseRefs(row.refs);
                     return (
                         <tr
-                            class="hover:bg-accent/40 data-selected:bg-accent/64"
+                            class="cursor-pointer hover:bg-accent/40 data-selected:bg-accent/64"
                             style={`height: ${GRAPH_ROW_HEIGHT_PX}px`}
+                            tabindex="0"
+                            data-graph-row
                             data-slot="graph-row"
                         >
                             <td class="p-0" />
@@ -297,3 +299,29 @@ function edgePath(edge: LaneEdge, cy: number) {
         </tbody>
     </table>
 </div>
+
+<script>
+    for (const root of document.querySelectorAll<HTMLElement>(
+        "[data-commit-graph]"
+    )) {
+        const rows = [
+            ...root.querySelectorAll<HTMLElement>("[data-graph-row]"),
+        ];
+        const clear = () => {
+            for (const row of rows) row.removeAttribute("data-selected");
+        };
+        for (const row of rows) {
+            row.addEventListener("click", () => {
+                const selected = row.hasAttribute("data-selected");
+                clear();
+                if (!selected) row.setAttribute("data-selected", "");
+            });
+            row.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    row.click();
+                }
+            });
+        }
+    }
+</script>

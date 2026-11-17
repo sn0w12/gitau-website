@@ -10,7 +10,7 @@ interface Props {
     command: string;
 }
 
-type TokenType = "keyword" | "symbol" | "url";
+type TokenType = "command" | "flag" | "pipe" | "url";
 
 interface Token {
     type: TokenType;
@@ -24,7 +24,13 @@ const URL_PREFIX = /^(?:https?|ftp):\/\//;
 
 function parseCommand(input: string): Token[] {
     return [...input.matchAll(TOKEN_PATTERN)].map(([value]) => ({
-        type: URL_PREFIX.test(value) ? "url" : value === "|" ? "symbol" : "keyword",
+        type: URL_PREFIX.test(value)
+            ? "url"
+            : value === "|"
+              ? "pipe"
+              : value.startsWith("-") && value.length > 1
+                ? "flag"
+                : "command",
         value,
     }));
 }
@@ -54,11 +60,20 @@ const tokens = parseCommand(command);
                     tokens.map((token, index) => (
                         <>
                             {index > 0 && " "}
-                            <span
-                                data-install-token={token.type}
-                            >
-                                {token.value}
-                            </span>
+                            {token.type === "flag" ? (
+                                <>
+                                    <span data-install-token="flag-prefix">
+                                        -
+                                    </span>
+                                    <span data-install-token="flag-name">
+                                        {token.value.slice(1)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span data-install-token={token.type}>
+                                    {token.value}
+                                </span>
+                            )}
                         </>
                     ))
                 }

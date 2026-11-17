@@ -6,6 +6,9 @@ import IssueRow from "./github/IssueRow.astro";
 import PullRow from "./github/PullRow.astro";
 import ChangesPanel from "./repo/ChangesPanel.astro";
 import CommitGraph from "./repo/CommitGraph.astro";
+import DiffView from "./repo/DiffView.astro";
+import HistoryChart from "./repo/HistoryChart.astro";
+import PullRequestDetail from "./repo/PullRequestDetail.astro";
 import RepoCard from "./repo/RepoCard.astro";
 import ShowcaseItem from "./ShowcaseItem.astro";
 import Button from "./ui/Button.astro";
@@ -289,19 +292,15 @@ const notifications: Notification[] = [
         <div data-reveal-grid class="mt-8 grid gap-10 lg:grid-cols-3 lg:gap-6">
             <ShowcaseItem
                 class="lg:col-span-2"
-                title="Commit graph"
-                description="Read history as a graph: branches, tags, and merges beside the commits that moved them."
+                title="Diff viewer"
+                description="Split wraps long lines inside each column; unified keeps them on one line and scrolls sideways."
             >
-                <Frame class="flex-1">
-                    <FramePanel class="flex-1 p-2">
-                        <CommitGraph rows={commits} />
-                    </FramePanel>
-                </Frame>
+                <DiffView />
             </ShowcaseItem>
 
             <ShowcaseItem
                 title="Changes and commits"
-                description="Stage files one at a time or all at once, then commit without leaving the list."
+                description="One filter narrows both lists, and the commit form stays pinned while either one scrolls."
             >
                 <ChangesPanel
                     branch="master"
@@ -329,8 +328,36 @@ const notifications: Notification[] = [
             </ShowcaseItem>
 
             <ShowcaseItem
+                full
+                title="Commit graph"
+                description="Each branch keeps its own lane from fork to merge, so divergence is visible before you read a hash."
+            >
+                <Frame class="flex-1">
+                    <FramePanel class="flex-1 p-2">
+                        <CommitGraph rows={commits} />
+                    </FramePanel>
+                </Frame>
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                full
+                title="History chart"
+                description="Buckets widen as the repository ages, and commits get their own axis so a large rename cannot flatten the activity line."
+            >
+                <HistoryChart />
+            </ShowcaseItem>
+
+            <ShowcaseItem
+                full
+                title="Pull request conversation"
+                description="Inline review comments keep the hunk they were written against, so the line stays in the thread."
+            >
+                <PullRequestDetail />
+            </ShowcaseItem>
+
+            <ShowcaseItem
                 title="Pull requests"
-                description="Review threads, checks, and labels in the app. Comment on a line without a browser."
+                description="Open a review thread in the app, with the code and its line comments in the same window."
             >
                 <GithubPanel
                     title="Pull Requests"
@@ -343,7 +370,7 @@ const notifications: Notification[] = [
 
             <ShowcaseItem
                 title="Issues"
-                description="Filter by label, follow a thread through its comments, and render Markdown and Mermaid."
+                description="Issue bodies render Markdown and Mermaid inline, so a design note stays in the thread."
             >
                 <GithubPanel
                     title="Issues"
@@ -356,7 +383,7 @@ const notifications: Notification[] = [
 
             <ShowcaseItem
                 title="GitHub inbox"
-                description="Notifications newest first, opened in the app or handed to the browser."
+                description="Pull requests and issues open in a tab; everything else goes to the browser."
             >
                 <GithubPanel
                     title="Inbox"
@@ -365,14 +392,11 @@ const notifications: Notification[] = [
                     rows={notifications}
                     Row={InboxRow}
                 >
-                    <Button
-                        slot="actions"
-                        variant="outline"
-                        size="sm"
-                        disabled
-                    >
-                        Mark all read
-                    </Button>
+                    <span slot="actions" data-inbox-mark-all>
+                        <Button variant="outline" size="sm">
+                            Mark all read
+                        </Button>
+                    </span>
                 </GithubPanel>
             </ShowcaseItem>
 
@@ -380,7 +404,7 @@ const notifications: Notification[] = [
                 full
                 reveal={false}
                 title="Your repositories"
-                description="Pinned repositories with stars, forks, and the language mix read from the GitHub API when the site builds."
+                description="The repositories you pinned, with stars, forks, and the language bar."
             >
                 <div data-reveal-grid class="grid h-full gap-1 sm:grid-cols-2 xl:grid-cols-4">
                     {
@@ -401,3 +425,49 @@ const notifications: Notification[] = [
         </div>
     </div>
 </section>
+
+<script>
+    function markInboxRead(row: HTMLElement) {
+        row.removeAttribute("data-unread");
+        const icon = row.querySelector<HTMLElement>("[data-inbox-icon]");
+        icon?.classList.remove("text-primary");
+        icon?.classList.add("text-muted-foreground");
+        row.querySelector<HTMLElement>("[data-inbox-mark-read]")?.setAttribute(
+            "hidden",
+            ""
+        );
+    }
+
+    function syncInboxMarkAll() {
+        const unread = document.querySelector("[data-inbox-row][data-unread]");
+        const button = document.querySelector<HTMLButtonElement>(
+            "[data-inbox-mark-all] button"
+        );
+        if (button) button.disabled = !unread;
+    }
+
+    document.addEventListener("click", (event) => {
+        const target =
+            event.target instanceof Element ? event.target : null;
+        if (!target) return;
+
+        const mark = target.closest("[data-inbox-mark-read]");
+        if (mark) {
+            const row = mark.closest<HTMLElement>("[data-inbox-row]");
+            if (row) markInboxRead(row);
+            syncInboxMarkAll();
+            return;
+        }
+
+        if (target.closest("[data-inbox-mark-all]")) {
+            for (const row of document.querySelectorAll<HTMLElement>(
+                "[data-inbox-row]"
+            )) {
+                markInboxRead(row);
+            }
+            syncInboxMarkAll();
+        }
+    });
+
+    syncInboxMarkAll();
+</script>

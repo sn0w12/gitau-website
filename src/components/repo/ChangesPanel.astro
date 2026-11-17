@@ -7,6 +7,7 @@ import SplitPath from "../SplitPath.astro";
 import CommitHooks from "./CommitHooks.astro";
 import Badge from "../ui/Badge.astro";
 import Button from "../ui/Button.astro";
+import { buttonVariants } from "../ui/button-variants";
 import Checkbox from "../ui/Checkbox.astro";
 import Frame from "../ui/Frame.astro";
 import FramePanel from "../ui/FramePanel.astro";
@@ -38,7 +39,6 @@ interface Props {
     class?: string;
 }
 
-/* The app's scroll area and animation wrappers are left out. */
 const { branch, staged = [], unstaged = [], filter, class: className } =
     Astro.props;
 
@@ -50,7 +50,7 @@ const someChecked = (entries: Change[]) =>
 
 <Frame class={cn("flex min-h-0 flex-1 flex-col", className)}>
     <FramePanel class="flex min-h-0 flex-1 flex-col p-0">
-        <div class="flex min-h-0 flex-1 flex-col">
+        <div class="flex min-h-0 flex-1 flex-col" data-changes-panel>
             <div class="border-b p-0.5">
                 <Input
                     id="changes-filter-input"
@@ -61,81 +61,174 @@ const someChecked = (entries: Change[]) =>
             </div>
 
             <div class="min-h-0 flex-1">
-                <div class="flex items-center justify-between pe-1 hover:bg-accent">
-                    <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground">
-                        <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
-                        <Checkbox
-                            checked={allChecked(staged)}
-                            indeterminate={someChecked(staged)}
-                            disabled={staged.length === 0}
-                            aria-label="Select all Staged"
-                        />
-                        <span class="font-semibold">Staged</span>
-                        <Badge
-                            class="h-5 rounded-md font-mono sm:h-5"
-                            variant="outline"
-                        >
-                            {staged.length}
-                        </Badge>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-0.5 pr-2.5">
-                        <Button
-                            size="icon-2xs"
-                            aria-label="Unstage all"
-                            disabled={staged.length === 0}
-                        >
-                            <Minus />
-                        </Button>
-                    </div>
-                </div>
-
-                <div class="flex flex-col">
-                    {
-                        staged.map((entry) => (
-                            <div
-                                role="option"
-                                aria-selected={entry.selected}
-                                data-selected={entry.selected ? "" : undefined}
-                                class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
-                            >
-                                {entry.selected && (
-                                    <span
-                                        aria-hidden="true"
-                                        class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
-                                    >
-                                        <span class="block h-2.5 w-0.5 rounded-r-full bg-primary" />
-                                    </span>
-                                )}
-                                <div class="flex min-w-0 items-center gap-1">
-                                    <ChangeIcon
-                                        change={entry.kind}
-                                        class="shrink-0"
-                                    />
-                                    <Checkbox
-                                        checked={entry.checked}
-                                        aria-label={`Select ${entry.path}`}
-                                    />
-                                    <div class="min-w-0">
-                                        <SplitPath path={entry.path} />
-                                    </div>
-                                </div>
-                                <div class="flex gap-0.5 pr-2.5 pl-1">
-                                    <Button
-                                        size="icon-2xs"
-                                        aria-label={`Unstage ${entry.path}`}
-                                    >
-                                        <Minus />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))
-                    }
-                </div>
-
-                <div class="border-t">
+                <div
+                    data-changes-section="staged"
+                    data-section-label="Staged"
+                    data-open
+                >
                     <div class="flex items-center justify-between pe-1 hover:bg-accent">
-                        <div class="flex min-w-0 flex-1 items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground">
-                            <ChevronUp class="mr-0.5 size-4 shrink-0 text-muted-foreground" />
+                        <div
+                            class="flex min-w-0 flex-1 cursor-pointer items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground"
+                            data-changes-toggle-area
+                        >
+                            <button
+                                type="button"
+                                class="mr-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                aria-label="Collapse Staged"
+                                aria-expanded="true"
+                                data-changes-toggle
+                            >
+                                <ChevronUp
+                                    class="size-4"
+                                    data-changes-chevron
+                                />
+                            </button>
+                            <Checkbox
+                                checked={allChecked(staged)}
+                                indeterminate={someChecked(staged)}
+                                disabled={staged.length === 0}
+                                aria-label="Select all Staged"
+                            />
+                            <span class="font-semibold">Staged</span>
+                            <Badge
+                                class="h-5 rounded-md font-mono sm:h-5"
+                                variant="outline"
+                            >
+                                <span data-section-count>{staged.length}</span>
+                            </Badge>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-0.5 pr-2.5">
+                            <button
+                                type="button"
+                                class={cn(buttonVariants({ size: "icon-2xs" }))}
+                                aria-label="Unstage all"
+                                disabled={staged.length === 0}
+                                data-change-action="unstage-all"
+                            >
+                                <Minus />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div data-changes-content>
+                        <div class="overflow-hidden">
+                            <div class="flex flex-col" data-file-list>
+                                {
+                                    staged.map((entry) => (
+                                        <div
+                                            role="option"
+                                            aria-selected={entry.selected}
+                                            data-selected={
+                                                entry.selected ? "" : undefined
+                                            }
+                                            data-change-row
+                                            data-side="staged"
+                                            data-path={entry.path}
+                                            class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
+                                            tabindex="0"
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                data-selection-indicator
+                                                class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
+                                            >
+                                                <span class="block w-0.5 rounded-r-full bg-primary" />
+                                            </span>
+                                            <div class="flex min-w-0 items-center gap-1">
+                                                <ChangeIcon
+                                                    change={entry.kind}
+                                                    class="shrink-0"
+                                                />
+                                                <Checkbox
+                                                    checked={entry.checked}
+                                                    aria-label={`Select ${entry.path}`}
+                                                />
+                                                <div class="min-w-0">
+                                                    <SplitPath
+                                                        path={entry.path}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="flex gap-0.5 pr-2.5 pl-1"
+                                                data-row-actions="staged"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                        })
+                                                    )}
+                                                    aria-label={`Unstage ${entry.path}`}
+                                                    data-change-action="unstage"
+                                                >
+                                                    <Minus />
+                                                </button>
+                                            </div>
+                                            <div
+                                                class="flex gap-0.5 pr-2.5 pl-1"
+                                                data-row-actions="unstaged"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                            variant:
+                                                                "destructive",
+                                                        })
+                                                    )}
+                                                    aria-label={`Discard changes in ${entry.path}`}
+                                                    data-change-action="discard"
+                                                >
+                                                    <Undo2 />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                            variant: "info",
+                                                        })
+                                                    )}
+                                                    aria-label={`Stage ${entry.path}`}
+                                                    data-change-action="stage"
+                                                >
+                                                    <Plus />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="border-t"
+                    data-changes-section="unstaged"
+                    data-section-label="Unstaged"
+                    data-open
+                >
+                    <div class="flex items-center justify-between pe-1 hover:bg-accent">
+                        <div
+                            class="flex min-w-0 flex-1 cursor-pointer items-center gap-1 border-transparent px-1.5 py-0.5 text-foreground"
+                            data-changes-toggle-area
+                        >
+                            <button
+                                type="button"
+                                class="mr-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                aria-label="Collapse Unstaged"
+                                aria-expanded="true"
+                                data-changes-toggle
+                            >
+                                <ChevronUp
+                                    class="size-4"
+                                    data-changes-chevron
+                                />
+                            </button>
                             <Checkbox
                                 checked={allChecked(unstaged)}
                                 indeterminate={someChecked(unstaged)}
@@ -147,7 +240,7 @@ const someChecked = (entries: Change[]) =>
                                 class="h-5 rounded-md font-mono sm:h-5"
                                 variant="outline"
                             >
-                                {unstaged.length}
+                                <span data-section-count>{unstaged.length}</span>
                             </Badge>
                         </div>
                         <div class="flex shrink-0 items-center gap-0.5 pr-2.5">
@@ -166,66 +259,116 @@ const someChecked = (entries: Change[]) =>
                             >
                                 <Undo2 />
                             </Button>
-                            <Button
-                                size="icon-2xs"
-                                variant="info"
+                            <button
+                                type="button"
+                                class={cn(
+                                    buttonVariants({
+                                        size: "icon-2xs",
+                                        variant: "info",
+                                    })
+                                )}
                                 aria-label="Stage all changes"
                                 disabled={unstaged.length === 0}
+                                data-change-action="stage-all"
                             >
                                 <Plus />
-                            </Button>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex flex-col">
-                        {
-                            unstaged.map((entry) => (
-                                <div
-                                    role="option"
-                                    aria-selected={entry.selected}
-                                    data-selected={entry.selected ? "" : undefined}
-                                    class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
-                                >
-                                    {entry.selected && (
-                                        <span
-                                            aria-hidden="true"
-                                            class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
+                    <div data-changes-content>
+                        <div class="overflow-hidden">
+                            <div class="flex flex-col" data-file-list>
+                                {
+                                    unstaged.map((entry) => (
+                                        <div
+                                            role="option"
+                                            aria-selected={entry.selected}
+                                            data-selected={
+                                                entry.selected ? "" : undefined
+                                            }
+                                            data-change-row
+                                            data-side="unstaged"
+                                            data-path={entry.path}
+                                            class="relative flex w-full cursor-pointer items-center justify-between px-1 py-0.5 hover:bg-accent data-selected:bg-accent/64"
+                                            tabindex="0"
                                         >
-                                            <span class="block h-2.5 w-0.5 rounded-r-full bg-primary" />
-                                        </span>
-                                    )}
-                                    <div class="flex min-w-0 items-center gap-1">
-                                        <ChangeIcon
-                                            change={entry.kind}
-                                            class="shrink-0"
-                                        />
-                                        <Checkbox
-                                            checked={entry.checked}
-                                            aria-label={`Select ${entry.path}`}
-                                        />
-                                        <div class="min-w-0">
-                                            <SplitPath path={entry.path} />
+                                            <span
+                                                aria-hidden="true"
+                                                data-selection-indicator
+                                                class="pointer-events-none absolute top-1/2 left-0 -translate-y-1/2"
+                                            >
+                                                <span class="block w-0.5 rounded-r-full bg-primary" />
+                                            </span>
+                                            <div class="flex min-w-0 items-center gap-1">
+                                                <ChangeIcon
+                                                    change={entry.kind}
+                                                    class="shrink-0"
+                                                />
+                                                <Checkbox
+                                                    checked={entry.checked}
+                                                    aria-label={`Select ${entry.path}`}
+                                                />
+                                                <div class="min-w-0">
+                                                    <SplitPath
+                                                        path={entry.path}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="flex gap-0.5 pr-2.5 pl-1"
+                                                data-row-actions="staged"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                        })
+                                                    )}
+                                                    aria-label={`Unstage ${entry.path}`}
+                                                    data-change-action="unstage"
+                                                >
+                                                    <Minus />
+                                                </button>
+                                            </div>
+                                            <div
+                                                class="flex gap-0.5 pr-2.5 pl-1"
+                                                data-row-actions="unstaged"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                            variant:
+                                                                "destructive",
+                                                        })
+                                                    )}
+                                                    aria-label={`Discard changes in ${entry.path}`}
+                                                    data-change-action="discard"
+                                                >
+                                                    <Undo2 />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class={cn(
+                                                        buttonVariants({
+                                                            size: "icon-2xs",
+                                                            variant: "info",
+                                                        })
+                                                    )}
+                                                    aria-label={`Stage ${entry.path}`}
+                                                    data-change-action="stage"
+                                                >
+                                                    <Plus />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="flex gap-0.5 pr-2.5 pl-1">
-                                        <Button
-                                            size="icon-2xs"
-                                            variant="destructive"
-                                            aria-label={`Discard changes in ${entry.path}`}
-                                        >
-                                            <Undo2 />
-                                        </Button>
-                                        <Button
-                                            size="icon-2xs"
-                                            variant="info"
-                                            aria-label={`Stage ${entry.path}`}
-                                        >
-                                            <Plus />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))
-                        }
+                                    ))
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -258,3 +401,291 @@ const someChecked = (entries: Change[]) =>
         </div>
     </FramePanel>
 </Frame>
+
+<script>
+    type BoxState = "checked" | "indeterminate" | "unchecked";
+
+    function paint(box: HTMLElement, state: BoxState) {
+        const parts: HTMLElement[] = [box];
+        const indicator = box.querySelector<HTMLElement>(
+            "[data-slot=checkbox-indicator]"
+        );
+        if (indicator) parts.push(indicator);
+        for (const part of parts) {
+            part.toggleAttribute("data-checked", state === "checked");
+            part.toggleAttribute("data-indeterminate", state === "indeterminate");
+            part.toggleAttribute("data-unchecked", state === "unchecked");
+        }
+        box.setAttribute(
+            "aria-checked",
+            state === "indeterminate"
+                ? "mixed"
+                : state === "checked"
+                  ? "true"
+                  : "false"
+        );
+    }
+
+    for (const root of document.querySelectorAll<HTMLElement>(
+        "[data-changes-panel]"
+    )) {
+        const sections = [
+            ...root.querySelectorAll<HTMLElement>("[data-changes-section]"),
+        ];
+
+        const sectionBox = (section: HTMLElement) =>
+            section.querySelector<HTMLElement>(
+                "[data-changes-toggle-area] [data-checkbox]"
+            );
+
+        const fileBoxes = (section: HTMLElement) => [
+            ...section.querySelectorAll<HTMLElement>(
+                "[data-changes-content] [data-checkbox]"
+            ),
+        ];
+
+        const refreshSection = (section: HTMLElement) => {
+            const box = sectionBox(section);
+            if (!box) return;
+            const boxes = fileBoxes(section);
+            const checked = boxes.filter((entry) =>
+                entry.hasAttribute("data-checked")
+            ).length;
+            if (checked === 0) paint(box, "unchecked");
+            else if (checked === boxes.length) paint(box, "checked");
+            else paint(box, "indeterminate");
+        };
+
+        const refresh = () => {
+            for (const section of sections) {
+                const rows = section.querySelectorAll("[data-change-row]");
+                const count = section.querySelector<HTMLElement>(
+                    "[data-section-count]"
+                );
+                if (count) count.textContent = String(rows.length);
+                for (const action of section.querySelectorAll<HTMLButtonElement>(
+                    '[data-change-action$="-all"]'
+                )) {
+                    action.disabled = rows.length === 0;
+                }
+                refreshSection(section);
+            }
+        };
+
+        const moveRow = (
+            row: HTMLElement,
+            side: "staged" | "unstaged",
+            focusAction: boolean
+        ) => {
+            const list = root.querySelector<HTMLElement>(
+                `[data-changes-section="${side}"] [data-file-list]`
+            );
+            if (!list) return;
+            row.dataset.side = side;
+            list.append(row);
+            if (focusAction) {
+                const next = row.querySelector<HTMLElement>(
+                    `[data-row-actions="${side}"] [data-change-action="${side === "staged" ? "unstage" : "stage"}"]`
+                );
+                next?.focus();
+            }
+        };
+
+        const handleCheckbox = (box: HTMLElement) => {
+            const section = box.closest<HTMLElement>(
+                "[data-changes-section]"
+            );
+            if (!section) return;
+            if (box.closest("[data-changes-toggle-area]")) {
+                const boxes = fileBoxes(section);
+                const all = boxes.every((entry) =>
+                    entry.hasAttribute("data-checked")
+                );
+                for (const entry of boxes) {
+                    paint(entry, all ? "unchecked" : "checked");
+                }
+            } else {
+                paint(
+                    box,
+                    box.hasAttribute("data-checked") ? "unchecked" : "checked"
+                );
+            }
+            refreshSection(section);
+        };
+
+        const handleAction = (action: HTMLElement) => {
+            const name = action.dataset.changeAction;
+            if (name === "stage" || name === "unstage") {
+                const row = action.closest<HTMLElement>("[data-change-row]");
+                if (row) {
+                    moveRow(
+                        row,
+                        name === "stage" ? "staged" : "unstaged",
+                        true
+                    );
+                }
+                refresh();
+                return;
+            }
+            if (name === "stage-all" || name === "unstage-all") {
+                const from = name === "stage-all" ? "unstaged" : "staged";
+                const to = name === "stage-all" ? "staged" : "unstaged";
+                const rows = [
+                    ...root.querySelectorAll<HTMLElement>(
+                        `[data-changes-section="${from}"] [data-change-row]`
+                    ),
+                ];
+                for (const row of rows) moveRow(row, to, false);
+                refresh();
+            }
+        };
+
+        const selectRow = (row: HTMLElement) => {
+            const selected = row.hasAttribute("data-selected");
+            for (const other of root.querySelectorAll<HTMLElement>(
+                "[data-change-row]"
+            )) {
+                other.removeAttribute("data-selected");
+                other.setAttribute("aria-selected", "false");
+            }
+            if (!selected) {
+                row.setAttribute("data-selected", "");
+                row.setAttribute("aria-selected", "true");
+            }
+        };
+
+        root.addEventListener(
+            "click",
+            (event) => {
+                const target =
+                    event.target instanceof Element ? event.target : null;
+                if (!target) return;
+
+                const box = target.closest<HTMLElement>("[data-checkbox]");
+                if (box) {
+                    event.stopPropagation();
+                    handleCheckbox(box);
+                    return;
+                }
+
+                const action = target.closest<HTMLElement>(
+                    "[data-change-action]"
+                );
+                if (action) {
+                    handleAction(action);
+                    return;
+                }
+
+                const row = target.closest<HTMLElement>("[data-change-row]");
+                if (row) selectRow(row);
+            },
+            true
+        );
+
+        root.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            const target =
+                event.target instanceof Element ? event.target : null;
+            if (!target) return;
+            const row = target.closest<HTMLElement>("[data-change-row]");
+            if (!row || target !== row) return;
+            event.preventDefault();
+            row.click();
+        });
+
+        root.addEventListener("click", (event) => {
+            const target =
+                event.target instanceof Element ? event.target : null;
+            if (!target) return;
+            const area = target.closest<HTMLElement>(
+                "[data-changes-toggle-area]"
+            );
+            if (!area) return;
+            const section = area.closest<HTMLElement>(
+                "[data-changes-section]"
+            );
+            if (!section) return;
+            const toggle = section.querySelector<HTMLElement>(
+                "[data-changes-toggle]"
+            );
+            const open = section.toggleAttribute("data-open");
+            toggle?.setAttribute("aria-expanded", String(open));
+            toggle?.setAttribute(
+                "aria-label",
+                `${open ? "Collapse" : "Expand"} ${section.dataset.sectionLabel ?? "section"}`
+            );
+        });
+
+        const filter = root.querySelector<HTMLInputElement>(
+            "#changes-filter-input"
+        );
+        filter?.addEventListener("input", () => {
+            const term = filter.value.trim().toLowerCase();
+            for (const row of root.querySelectorAll<HTMLElement>(
+                "[data-change-row]"
+            )) {
+                row.hidden =
+                    term.length > 0 &&
+                    !(row.dataset.path ?? "").toLowerCase().includes(term);
+            }
+        });
+
+        refresh();
+    }
+</script>
+
+<style>
+    [data-changes-content] {
+        display: grid;
+        grid-template-rows: 1fr;
+        transition: grid-template-rows 200ms var(--ease-snappy);
+    }
+
+    [data-changes-section]:not([data-open]) [data-changes-content] {
+        grid-template-rows: 0fr;
+    }
+
+    [data-changes-chevron] {
+        transition: rotate 200ms var(--ease-snappy);
+    }
+
+    [data-changes-section]:not([data-open]) [data-changes-chevron] {
+        rotate: 180deg;
+    }
+
+    [data-change-row][data-side="staged"] [data-row-actions="unstaged"],
+    [data-change-row][data-side="unstaged"] [data-row-actions="staged"] {
+        display: none;
+    }
+
+    [data-change-row] [data-selection-indicator] > span {
+        height: 0;
+        opacity: 0;
+        transition:
+            height 100ms var(--ease-snappy),
+            opacity 100ms var(--ease-snappy);
+    }
+
+    [data-change-row]:hover [data-selection-indicator] > span,
+    [data-change-row]:focus-visible [data-selection-indicator] > span {
+        height: 4px;
+        opacity: 1;
+    }
+
+    [data-change-row][data-selected] [data-selection-indicator] > span {
+        height: 10px;
+        opacity: 1;
+    }
+
+    [data-change-row]:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: -2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        [data-changes-content],
+        [data-changes-chevron] {
+            transition: none;
+        }
+    }
+</style>

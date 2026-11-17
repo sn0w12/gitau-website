@@ -12,12 +12,17 @@ interface Props {
     unread?: boolean;
 }
 
-/* The mark-read action is rendered but inert, since the row is a mock. */
+/* The mark-read action is wired by the showcase page. */
 const { type, title, meta, unread = false } = Astro.props;
 ---
 
-<div class="flex items-center gap-2 px-2 py-2">
+<div
+    class="flex items-center gap-2 px-2 py-2"
+    data-inbox-row
+    data-unread={unread ? "" : undefined}
+>
     <span
+        data-inbox-icon
         class={cn(
             "shrink-0 [&_svg:not([class*='size-'])]:size-4",
             unread ? "text-primary" : "text-muted-foreground"
@@ -31,7 +36,10 @@ const { type, title, meta, unread = false } = Astro.props;
         </div>
         <p class="truncate text-xs text-muted-foreground">{meta}</p>
     </div>
-    <span class="flex size-8 shrink-0 items-center justify-center">
+    <span
+        class="flex size-8 shrink-0 items-center justify-center"
+        data-inbox-mark-read
+    >
         {
             unread && (
                 <Button

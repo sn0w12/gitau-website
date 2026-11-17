@@ -1,0 +1,677 @@
+---
+import { Check, Settings, X } from "lucide-astro";
+
+import { cn } from "../../lib/cn";
+import ChangeIcon from "../ChangeIcon.astro";
+import SplitPath from "../SplitPath.astro";
+import { buttonVariants } from "../ui/button-variants";
+import Button from "../ui/Button.astro";
+import Frame from "../ui/Frame.astro";
+import FramePanel from "../ui/FramePanel.astro";
+
+type RowKind = "addition" | "context" | "deletion" | "hunk";
+
+interface Row {
+    kind: RowKind;
+    old?: number;
+    new?: number;
+    content: string;
+}
+
+const ROWS: Row[] = [
+    {
+        kind: "hunk",
+        content: "@@ -34,15 +34,21 @@ export function useFixedHeightWindow(",
+    },
+    {
+        kind: "context",
+        old: 34,
+        new: 34,
+        content: "    const [viewportHeight, setViewportHeight] = useState(0);",
+    },
+    {
+        kind: "context",
+        old: 35,
+        new: 35,
+        content: "    const [scrollTop, setScrollTop] = useState(0);",
+    },
+    {
+        kind: "context",
+        old: 36,
+        new: 36,
+        content: "    // Measure the viewport instead of its scroll offset.",
+    },
+    {
+        kind: "deletion",
+        old: 37,
+        content: "    const viewportRef = useRef<HTMLDivElement>(null);",
+    },
+    {
+        kind: "addition",
+        new: 37,
+        content: "    const observerRef = useRef<ResizeObserver | null>(null);",
+    },
+    {
+        kind: "context",
+        old: 39,
+        new: 39,
+        content: "    useLayoutEffect(() => {",
+    },
+    {
+        kind: "deletion",
+        old: 40,
+        content: "        const node = viewportRef.current;",
+    },
+    {
+        kind: "addition",
+        new: 40,
+        content: "        const node = containerRef.current;",
+    },
+    { kind: "deletion", old: 41, content: "        if (!node) return;" },
+    {
+        kind: "deletion",
+        old: 43,
+        content: "        const onScroll = () => setScrollTop(node.scrollTop);",
+    },
+    {
+        kind: "deletion",
+        old: 44,
+        content: '        node.addEventListener("scroll", onScroll);',
+    },
+    {
+        kind: "addition",
+        new: 43,
+        content: "        const measure = () => setViewportHeight(node.clientHeight);",
+    },
+    { kind: "addition", new: 44, content: "        measure();" },
+    {
+        kind: "addition",
+        new: 45,
+        content: "        observerRef.current = new ResizeObserver(measure);",
+    },
+    {
+        kind: "addition",
+        new: 46,
+        content: "        observerRef.current.observe(node);",
+    },
+    {
+        kind: "hunk",
+        content: "@@ -54,9 +60,12 @@ export function useFixedHeightWindow(",
+    },
+    {
+        kind: "context",
+        old: 54,
+        new: 60,
+        content: "    const start = Math.max(0, Math.floor(scrollTop / rowHeight) - 2);",
+    },
+    {
+        kind: "context",
+        old: 55,
+        new: 61,
+        content: "    const end = start + Math.ceil(height / rowHeight) + 4;",
+    },
+    {
+        kind: "deletion",
+        old: 57,
+        content: "    return { start, end, totalHeight: count * rowHeight };",
+    },
+    {
+        kind: "addition",
+        new: 63,
+        content: "    const offsetTop = start * rowHeight;",
+    },
+    {
+        kind: "addition",
+        new: 64,
+        content: "    const totalHeight = count * rowHeight;",
+    },
+    {
+        kind: "addition",
+        new: 65,
+        content: "    return { start, end, totalHeight, offsetTop };",
+    },
+    { kind: "context", old: 58, new: 66, content: "}" },
+];
+
+const TONE_COLOR = {
+    attribute: "var(--syntax-attribute)",
+    comment: "var(--syntax-comment)",
+    constant: "var(--syntax-constant)",
+    control: "var(--syntax-control)",
+    function: "var(--syntax-function)",
+    keyword: "var(--syntax-keyword)",
+    number: "var(--syntax-number)",
+    operator: "var(--syntax-operator)",
+    punctuation: "var(--syntax-punctuation)",
+    string: "var(--syntax-string)",
+    type: "var(--syntax-type)",
+    variable: "var(--syntax-variable)",
+} as const;
+
+type Tone = keyof typeof TONE_COLOR;
+
+const KEYWORDS = new Set([
+    "as",
+    "class",
+    "const",
+    "declare",
+    "enum",
+    "export",
+    "extends",
+    "from",
+    "function",
+    "implements",
+    "import",
+    "interface",
+    "keyof",
+    "let",
+    "module",
+    "namespace",
+    "readonly",
+    "satisfies",
+    "type",
+    "typeof",
+    "var",
+]);
+
+const CONTROL = new Set([
+    "async",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "continue",
+    "default",
+    "do",
+    "else",
+    "finally",
+    "for",
+    "if",
+    "in",
+    "instanceof",
+    "new",
+    "of",
+    "return",
+    "switch",
+    "throw",
+    "try",
+    "while",
+    "yield",
+]);
+
+const CONSTANTS = new Set([
+    "false",
+    "Infinity",
+    "NaN",
+    "null",
+    "super",
+    "this",
+    "true",
+    "undefined",
+]);
+
+interface Token {
+    text: string;
+    tone?: Tone;
+}
+
+function escapeHtml(value: string) {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+}
+
+function wordTone(word: string, member: boolean, called: boolean): Tone {
+    if (KEYWORDS.has(word)) return "keyword";
+    if (CONTROL.has(word)) return "control";
+    if (CONSTANTS.has(word)) return "constant";
+    if (/^[A-Z]/.test(word)) return "type";
+    if (member) return called ? "function" : "attribute";
+    return called ? "function" : "variable";
+}
+
+function scanComment(code: string, start: number) {
+    let end = start + 2;
+    while (end < code.length && code[end] !== "\n") end += 1;
+    return end;
+}
+
+function scanString(code: string, start: number) {
+    const quote = code[start];
+    let end = start + 1;
+    while (end < code.length) {
+        if (code[end] === "\\") {
+            end += 2;
+            continue;
+        }
+        if (code[end] === quote) return end + 1;
+        end += 1;
+    }
+    return end;
+}
+
+function scanNumber(code: string, start: number) {
+    let end = start;
+    while (end < code.length && /[0-9._]/.test(code[end])) end += 1;
+    return end;
+}
+
+function scanWord(code: string, start: number) {
+    let end = start;
+    while (end < code.length && /[A-Za-z0-9_$]/.test(code[end])) end += 1;
+    return end;
+}
+
+function scanOperator(code: string, start: number) {
+    let end = start;
+    while (end < code.length && /[=!+\-*/%&|^~?]/.test(code[end])) end += 1;
+    return end;
+}
+
+function tokenize(code: string) {
+    const tokens: Token[] = [];
+    let cursor = 0;
+    let plain = 0;
+
+    const flush = (end: number) => {
+        if (end > plain) {
+            tokens.push({ text: code.slice(plain, end) });
+        }
+    };
+
+    while (cursor < code.length) {
+        const char = code[cursor];
+        let end = cursor;
+        let tone: Tone | undefined;
+
+        if (char === "/" && code[cursor + 1] === "/") {
+            end = scanComment(code, cursor);
+            tone = "comment";
+        } else if (char === '"' || char === "'" || char === "`") {
+            end = scanString(code, cursor);
+            tone = "string";
+        } else if (/[0-9]/.test(char)) {
+            end = scanNumber(code, cursor);
+            tone = "number";
+        } else if (/[A-Za-z_$]/.test(char)) {
+            end = scanWord(code, cursor);
+            const word = code.slice(cursor, end);
+            let before = cursor - 1;
+            while (before >= 0 && /\s/.test(code[before])) before -= 1;
+            let after = end;
+            while (after < code.length && /\s/.test(code[after])) after += 1;
+            tone = wordTone(
+                word,
+                code[before] === ".",
+                code[after] === "("
+            );
+        } else if (/[=!+\-*/%&|^~?]/.test(char)) {
+            end = scanOperator(code, cursor);
+            tone = "operator";
+        } else if (/[(){}[\],;.:<>]/.test(char)) {
+            end = cursor + 1;
+            tone = "punctuation";
+        } else {
+            cursor += 1;
+            continue;
+        }
+
+        flush(cursor);
+        tokens.push({ text: code.slice(cursor, end), tone });
+        cursor = end;
+        plain = end;
+    }
+
+    flush(cursor);
+    return tokens;
+}
+
+function highlight(code: string) {
+    return tokenize(code)
+        .map((token) => {
+            const text = escapeHtml(token.text);
+            if (!token.tone) return text;
+            const comment = token.tone === "comment" ? ";font-style:italic" : "";
+            return `<span style="color:${TONE_COLOR[token.tone]}${comment}">${text}</span>`;
+        })
+        .join("");
+}
+
+const ROW_BG: Record<RowKind, string> = {
+    addition: "bg-success/12",
+    context: "",
+    deletion: "bg-destructive/12",
+    hunk: "bg-muted/60 text-muted-foreground",
+};
+
+const ROW_BORDER: Record<RowKind, string> = {
+    addition: "border-success",
+    context: "border-transparent",
+    deletion: "border-destructive border-slashed",
+    hunk: "border-muted",
+};
+
+const additions = ROWS.filter((row) => row.kind === "addition").length;
+const deletions = ROWS.filter((row) => row.kind === "deletion").length;
+
+interface SplitItem {
+    type: "hunk" | "pair";
+    left?: Row;
+    right?: Row;
+}
+
+const splitItems: SplitItem[] = [];
+for (let index = 0; index < ROWS.length; ) {
+    const row = ROWS[index];
+    if (row.kind === "hunk") {
+        splitItems.push({ type: "hunk", left: row });
+        index += 1;
+        continue;
+    }
+    if (row.kind === "context") {
+        splitItems.push({ type: "pair", left: row, right: row });
+        index += 1;
+        continue;
+    }
+    const removed: Row[] = [];
+    while (index < ROWS.length && ROWS[index].kind === "deletion") {
+        removed.push(ROWS[index++]);
+    }
+    const added: Row[] = [];
+    while (index < ROWS.length && ROWS[index].kind === "addition") {
+        added.push(ROWS[index++]);
+    }
+    const count = Math.max(removed.length, added.length);
+    for (let offset = 0; offset < count; offset += 1) {
+        splitItems.push({
+            type: "pair",
+            left: removed[offset],
+            right: added[offset],
+        });
+    }
+}
+
+const html = new Map<string, string>();
+function line(row: Row | undefined) {
+    if (!row) return "";
+    if (row.content === "") return "&nbsp;";
+    const cached = html.get(row.content);
+    if (cached) return cached;
+    const result = highlight(row.content);
+    html.set(row.content, result);
+    return result;
+}
+---
+
+<div class="flex h-[542px] flex-col" data-diff-view>
+    <Frame class="flex min-h-0 flex-1 flex-col">
+        <FramePanel class="flex min-h-0 flex-1 flex-col p-0">
+            <div
+                class="relative flex h-8 shrink-0 items-start gap-1 border-b pt-1 pl-1"
+            >
+                <div
+                    class="mx-1 flex min-w-0 flex-1 items-center gap-1 pt-0.75 font-mono text-xs"
+                >
+                    <SplitPath
+                        path="src/hooks/diff/use-fixed-height-window.ts"
+                    />
+                </div>
+                <div class="absolute right-1 flex gap-0.5">
+                    <ChangeIcon change="modified" class="mt-0.5" />
+                    <div class="relative" data-diff-settings>
+                        <button
+                            type="button"
+                            class={cn(
+                                buttonVariants({
+                                    size: "icon-xs",
+                                    variant: "outline",
+                                })
+                            )}
+                            aria-label="Diff view settings"
+                            aria-haspopup="menu"
+                            aria-expanded="false"
+                            data-diff-settings-trigger
+                        >
+                            <Settings />
+                        </button>
+                        <div
+                            class="absolute top-full right-0 z-30 mt-1 hidden w-40 rounded-lg border bg-popover p-1 shadow-lg"
+                            role="menu"
+                            data-diff-settings-menu
+                        >
+                            <div
+                                class="px-2 py-1 text-xs font-medium text-muted-foreground"
+                            >
+                                View
+                            </div>
+                            <button
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked="true"
+                                class="flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm hover:bg-accent"
+                                data-diff-mode="unified"
+                            >
+                                Unified
+                                <Check
+                                    aria-hidden="true"
+                                    class="size-3.5"
+                                    data-diff-check
+                                    data-check-mode="unified"
+                                />
+                            </button>
+                            <button
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked="false"
+                                class="flex w-full items-center justify-between rounded-sm px-2 py-1 text-sm hover:bg-accent"
+                                data-diff-mode="split"
+                            >
+                                Split
+                                <Check
+                                    aria-hidden="true"
+                                    class="hidden size-3.5"
+                                    data-diff-check
+                                    data-check-mode="split"
+                                />
+                            </button>
+                        </div>
+                    </div>
+                    <Button
+                        size="icon-xs"
+                        variant="outline"
+                        aria-label="Close diff"
+                    >
+                        <X />
+                    </Button>
+                </div>
+            </div>
+
+            <div
+                class="min-h-0 flex-1 overflow-auto"
+                data-diff-body
+            >
+                <div class="flex min-h-full flex-col">
+                    <div data-diff-pane="unified" class="w-max min-w-full">
+                        {
+                            ROWS.map((row) => (
+                                <div
+                                    class={cn(
+                                        "flex h-5 items-center whitespace-pre font-mono text-xs",
+                                        ROW_BG[row.kind],
+                                        `border-l-3 ${ROW_BORDER[row.kind]}`
+                                    )}
+                                >
+                                    <span class="inline-block w-10 shrink-0 pr-2 text-right text-muted-foreground/70 select-none">
+                                        {row.old ?? ""}
+                                    </span>
+                                    <span class="inline-block w-10 shrink-0 pr-2 text-right text-muted-foreground/70 select-none">
+                                        {row.new ?? ""}
+                                    </span>
+                                    <span class="w-4 shrink-0 text-center opacity-60 select-none">
+                                        {row.kind === "addition"
+                                            ? "+"
+                                            : row.kind === "deletion"
+                                              ? "\u2212"
+                                              : ""}
+                                    </span>
+                                    {row.kind === "hunk" ? (
+                                        <span class="min-w-0 flex-1 truncate pl-1">
+                                            {row.content}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            class="min-w-0 flex-1 pl-1 whitespace-pre"
+                                            set:html={line(row)}
+                                        />
+                                    )}
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div data-diff-pane="split" hidden>
+                        {
+                            splitItems.map((item) =>
+                                item.type === "hunk" ? (
+                                    <div class="flex h-5 items-center bg-muted/60 font-mono text-xs text-muted-foreground">
+                                        <span class="inline-block w-10 shrink-0" />
+                                        <span class="inline-block w-10 shrink-0 border-r" />
+                                        <span class="w-4 shrink-0" />
+                                        <span class="min-w-0 flex-1 truncate pl-1">
+                                            {item.left?.content}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div class="grid grid-cols-2 font-mono text-xs">
+                                        <div
+                                            class={cn(
+                                                "flex min-h-5 min-w-0 items-start border-r",
+                                                item.left
+                                                    ? ROW_BG[item.left.kind]
+                                                    : "carbon"
+                                            )}
+                                        >
+                                            <span class="inline-block w-10 shrink-0 pr-2 text-right leading-5 text-muted-foreground/70 select-none">
+                                                {item.left?.old ?? ""}
+                                            </span>
+                                            <span
+                                                class="min-w-0 flex-1 overflow-hidden pl-1 leading-5 break-words whitespace-pre-wrap"
+                                                set:html={line(item.left)}
+                                            />
+                                        </div>
+                                        <div
+                                            class={cn(
+                                                "flex min-h-5 min-w-0 items-start",
+                                                item.right
+                                                    ? ROW_BG[item.right.kind]
+                                                    : "carbon"
+                                            )}
+                                        >
+                                            <span class="inline-block w-10 shrink-0 pr-2 text-right leading-5 text-muted-foreground/70 select-none">
+                                                {item.right?.new ?? ""}
+                                            </span>
+                                            <span
+                                                class="min-w-0 flex-1 overflow-hidden pl-1 leading-5 break-words whitespace-pre-wrap"
+                                                set:html={line(item.right)}
+                                            />
+                                        </div>
+                                    </div>
+                                )
+                            )
+                        }
+                    </div>
+
+                    <div class="carbon flex-1"></div>
+                </div>
+            </div>
+
+            <div
+                class="flex h-5 shrink-0 items-center gap-3 border-t px-2 font-mono text-xs text-muted-foreground"
+            >
+                <span class="ml-auto">{ROWS.length} lines</span>
+                <span class="text-success">+{additions}</span>
+                <span class="text-destructive">−{deletions}</span>
+            </div>
+        </FramePanel>
+    </Frame>
+</div>
+
+<script>
+    for (const root of document.querySelectorAll<HTMLElement>(
+        "[data-diff-view]"
+    )) {
+        const settings = root.querySelector<HTMLElement>(
+            "[data-diff-settings]"
+        );
+        const trigger = root.querySelector<HTMLElement>(
+            "[data-diff-settings-trigger]"
+        );
+        const menu = root.querySelector<HTMLElement>(
+            "[data-diff-settings-menu]"
+        );
+        const panes = root.querySelectorAll<HTMLElement>("[data-diff-pane]");
+        const options = root.querySelectorAll<HTMLElement>("[data-diff-mode]");
+        const checks = root.querySelectorAll<HTMLElement>("[data-diff-check]");
+        if (!settings || !trigger || !menu) continue;
+
+        const isOpen = () => !menu.classList.contains("hidden");
+
+        const close = (focusTrigger = false) => {
+            menu.classList.add("hidden");
+            trigger.setAttribute("aria-expanded", "false");
+            if (focusTrigger) trigger.focus();
+        };
+
+        const setMode = (mode: string) => {
+            root.dataset.view = mode;
+            for (const pane of panes) {
+                pane.hidden = pane.dataset.diffPane !== mode;
+            }
+            for (const option of options) {
+                option.setAttribute(
+                    "aria-checked",
+                    String(option.dataset.diffMode === mode)
+                );
+            }
+            for (const check of checks) {
+                check.classList.toggle(
+                    "hidden",
+                    check.dataset.checkMode !== mode
+                );
+            }
+        };
+
+        trigger.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (isOpen()) {
+                close();
+                return;
+            }
+            menu.classList.remove("hidden");
+            trigger.setAttribute("aria-expanded", "true");
+            const active = [...options].find(
+                (option) => option.getAttribute("aria-checked") === "true"
+            );
+            active?.focus();
+        });
+
+        for (const option of options) {
+            option.addEventListener("click", () => {
+                setMode(option.dataset.diffMode ?? "unified");
+                close(true);
+            });
+        }
+
+        document.addEventListener("click", (event) => {
+            if (isOpen() && !settings.contains(event.target as Node)) close();
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && isOpen()) close(true);
+        });
+    }
+</script>
+
+
