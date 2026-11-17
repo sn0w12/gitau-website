@@ -1,35 +1,16 @@
 ---
-import { Command, Download, Github, Zap } from "lucide-astro";
+import { Download, Github } from "lucide-astro";
 
 import FeatureShowcase from "../components/FeatureShowcase.astro";
 import Screenshot from "../components/Screenshot.astro";
 import Button from "../components/ui/Button.astro";
-import Section from "../components/Section.astro";
 import Layout from "../layouts/Layout.astro";
 import { HERO_SIZES } from "../lib/screenshots";
 import { HERO_SCREENSHOT, REPO_URL } from "../lib/site";
-
-const pillars = [
-    {
-        Icon: Zap,
-        title: "Rust under the hood",
-        body: "Status, diffs, and history are computed in Rust through libgit2 and gitoxide.",
-    },
-    {
-        Icon: Command,
-        title: "Keyboard first",
-        body: "A command palette and shortcuts reach every action, from staging a file to switching repository.",
-    },
-    {
-        Icon: Github,
-        title: "Review without a browser",
-        body: "Pull requests, reviews, and issue threads live in the app, so a line comment never needs a tab switch.",
-    },
-];
 ---
 
 <Layout title="gitau" preloadHero>
-    <section class="relative overflow-hidden border-b border-border/70">
+    <section class="relative overflow-hidden">
         <div
             class="carbon pointer-events-none absolute inset-0 [--pattern-opacity:0.32] [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)] dark:[--pattern-opacity:0.18]"
             aria-hidden="true"
@@ -73,24 +54,6 @@ const pillars = [
             </div>
         </div>
     </section>
-
-    <Section>
-        <div data-reveal-grid class="grid gap-8 md:grid-cols-3 md:gap-6">
-            {
-                pillars.map(({ Icon, title, body }) => (
-                    <div data-reveal class="flex flex-col">
-                        <div class="flex items-center gap-2.5">
-                            <Icon class="size-4 shrink-0 text-muted-foreground" />
-                            <h2 class="font-display text-2xl">{title}</h2>
-                        </div>
-                        <p class="mt-2 text-sm text-muted-foreground">
-                            {body}
-                        </p>
-                    </div>
-                ))
-            }
-        </div>
-    </Section>
 
     <FeatureShowcase />
 </Layout>
